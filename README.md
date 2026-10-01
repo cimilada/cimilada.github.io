@@ -1,6 +1,6 @@
-# Somalia Station Water Balance
+# Cimilada
 
-A free, public weather forecasting dashboard for Somalia: a 7-day hazard outlook in WMO
+**Cimilada** (Somali for "the weather") is a free, public weather forecasting dashboard for Somalia, in English and Somali: a 7-day hazard outlook in WMO
 impact-based colours with CAP 1.2 alerts, forecast maps from NOAA GFS, ECMWF IFS and
 ECMWF AIFS, two-week ensemble town forecasts, GloFAS river flow, port wave outlooks,
 SWALIM station water balance and the Deyr seasonal outlook.
@@ -11,6 +11,10 @@ The page is a single static HTML file with its data built in. A GitHub Actions w
 refetches the forecasts every morning (07:40 Mogadishu time), rebuilds the page and
 deploys it to GitHub Pages. If a required source fails, the run stops and the last good
 page stays online.
+
+## Contact
+
+Questions, corrections and Somali translation fixes: dedirector99@outlook.com
 
 ## Pipeline
 

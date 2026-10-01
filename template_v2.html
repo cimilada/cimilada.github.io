@@ -1,5 +1,7 @@
-<title>Somalia Station Water Balance</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Cpath d=%22M16 3c-5 7-9 11.5-9 16a9 9 0 0 0 18 0c0-4.5-4-9-9-16z%22 fill=%22%232a78d6%22/%3E%3C/svg%3E">
+<title>Cimilada</title>
+<meta name="description" content="Cimilada: free weather forecasts for Somalia. 7-day hazards, rain, rivers, seas, Gu and Deyr outlooks, in English and Somali.">
+__META__
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Cimilada"%3E  %3Crect width="48" height="48" rx="11" fill="%231b64c4"/%3E  %3Ccircle cx="33" cy="15.5" r="7.5" fill="%23ffc93c"/%3E  %3Cpath d="M22 8C15.5 17 11 22.6 11 28.6a11 11 0 0 0 22 0C33 22.6 28.5 17 22 8z" fill="%23fff"/%3E  %3Cpath d="M16.2 30.2a5.9 5.9 0 0 0 5.8 5.2" fill="none" stroke="%231b64c4" stroke-width="2.6" stroke-linecap="round"/%3E%3C/svg%3E">
 __ANALYTICS__
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -17,6 +19,8 @@ __ANALYTICS__
   --st0:#0b1f3a; --st1:#0b1f3a; --st2:#0b1f3a; --st3:#fff; --st4:#fff; --st5:#fff;
   --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b; --good-ink:#006300; --warn-ink:#8a5a00; --crit-ink:#b02a2a;
   --focus:#2a78d6;
+  /* brand: Cimilada blue (close to the Somali flag), logo sun */
+  --brand:#1b64c4; --logo:#1b64c4; --brand-ink:#ffffff;
   /* weather overlays */
   /* forecast fields: temperature (cool -> hot) and wind speed */
   --h0:#3b6fb6; --h1:#79abd6; --h2:#b9d8c4; --h3:#f1e19a; --h4:#f3ae66; --h5:#e2703c; --h6:#b2311f;
@@ -38,6 +42,7 @@ __ANALYTICS__
     --s0:#1b2a3a; --s1:#184f95; --s2:#256abf; --s3:#3987e5; --s4:#6da7ec; --s5:#b7d3f6;
     --st0:#f1f5f4; --st1:#fff; --st2:#fff; --st3:#fff; --st4:#0b1f3a; --st5:#0b1f3a;
     --good-ink:#34c234; --warn-ink:#fab219; --crit-ink:#ef6a6a; --focus:#6da7ec;
+    --brand:#6aa5f2; --logo:#1b64c4; --brand-ink:#0b1f3a;
     --cloud:#eef3f8; --wind:#e6eef5; --tc-cs:#fab219; --tc-vs:#ff8a50; --tc-su:#ff6b6b;
   }
 }
@@ -52,6 +57,7 @@ __ANALYTICS__
   --s0:#1b2a3a; --s1:#184f95; --s2:#256abf; --s3:#3987e5; --s4:#6da7ec; --s5:#b7d3f6;
   --st0:#f1f5f4; --st1:#fff; --st2:#fff; --st3:#fff; --st4:#0b1f3a; --st5:#0b1f3a;
   --good-ink:#34c234; --warn-ink:#fab219; --crit-ink:#ef6a6a; --focus:#6da7ec;
+    --brand:#6aa5f2; --logo:#1b64c4; --brand-ink:#0b1f3a;
     --cloud:#eef3f8; --wind:#e6eef5; --tc-cs:#fab219; --tc-vs:#ff8a50; --tc-su:#ff6b6b;
 }
 *{box-sizing:border-box}
@@ -180,6 +186,7 @@ footer{font-size:12.5px;color:var(--muted);display:grid;gap:4px}
 .tl .lbl b{color:var(--ink);font-weight:600}
 .btn{font:500 13px var(--sans);color:var(--ink);background:var(--surface);border:1px solid var(--axis);border-radius:6px;padding:5px 11px;cursor:pointer;white-space:nowrap}
 .btn:hover{border-color:var(--ink)}
+a.btn{text-decoration:none;display:inline-block}
 .share{display:flex;gap:8px;align-items:center;margin-left:auto}
 .share input{font:12px var(--mono);width:16ch;min-width:0;color:var(--ink2);background:var(--surface);border:1px solid var(--axis);border-radius:6px;padding:5px 8px}
 .share .ok{font-size:12.5px;color:var(--good-ink)}
@@ -227,13 +234,41 @@ pre.raw{margin:0;max-height:360px;overflow:auto;font:12px/1.5 var(--mono);color:
 .fc-tbl tr.sel th.row{color:var(--rain)}
 .age{font-size:12px;font-weight:600;color:var(--good-ink)}
 .age.stale{color:var(--crit-ink)}
+/* Cimilada header and contact */
+body{border-top:4px solid var(--brand)}
+.brand-row{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center;justify-content:space-between}
+.brand{display:inline-flex;align-items:center;gap:11px;color:var(--ink);text-decoration:none}
+.brand .logo{width:44px;height:44px;flex:none}
+.wordmark{font:600 34px/1 var(--cond);letter-spacing:.01em}
+.wordmark small{display:block;font:500 13px/1.3 var(--sans);letter-spacing:.02em;color:var(--muted);margin-top:3px}
+.top-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg.lang button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink)}
+.so-note{font-size:13px;color:var(--ink2);padding:6px 10px;border-left:3px solid var(--brand);background:color-mix(in srgb,var(--brand) 7%,transparent);border-radius:0 6px 6px 0}
+.nav a:hover,.nav a:focus-visible{border-color:var(--brand);color:var(--brand)}
+a{color:var(--brand)}
+.contact{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 24px;align-items:center}
+@media (max-width:640px){.contact{grid-template-columns:minmax(0,1fr)}}
+.contact .mail{font:600 17px var(--sans);color:var(--ink);word-break:break-all}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
 <div class="wrap">
   <header class="top">
-    <div class="eyebrow">SWALIM gauges + AWS · CHIRPS v3 · ECMWF SEAS5 · CHIRPS3-GEFS · FRRIMS <span class="v2tag">V2</span></div>
-    <h1>Somalia Station Water Balance</h1>
+    <div class="brand-row">
+      <a class="brand" href="#hazards" aria-label="Cimilada"><svg class="logo" viewBox="0 0 48 48" aria-hidden="true">
+  <rect width="48" height="48" rx="11" fill="var(--logo)"/>
+  <circle cx="33" cy="15.5" r="7.5" fill="#ffc93c"/>
+  <path d="M22 8C15.5 17 11 22.6 11 28.6a11 11 0 0 0 22 0C33 22.6 28.5 17 22 8z" fill="#fff"/>
+  <path d="M16.2 30.2a5.9 5.9 0 0 0 5.8 5.2" fill="none" stroke="#1b64c4" stroke-width="2.6" stroke-linecap="round"/>
+</svg><span class="wordmark">Cimilada<small>Somalia weather forecasts</small></span></a>
+      <div class="top-actions">
+        <div class="seg lang" role="group" aria-label="Language"><button type="button" data-lang="en" aria-pressed="true" lang="en">English</button><button type="button" data-lang="so" aria-pressed="false" lang="so">Soomaali</button></div>
+        <a class="btn" href="#contact">Contact</a>
+      </div>
+    </div>
+    <p class="so-note" id="so-note" hidden>Af-Soomaali (tijaabo). Qoraallada farsamada ee faahfaahsan waxay weli ku qoran yihiin Ingiriisi. Haddii aad aragto khalad, nala soo xiriir.</p>
+    <div class="eyebrow">SWALIM gauges + AWS · CHIRPS v3 · ECMWF · NOAA GFS · GloFAS · FRRIMS</div>
+    <h1>Weather forecasts and water balance for Somalia</h1>
     <p class="lede" id="lede"></p>
   </header>
 
@@ -418,6 +453,23 @@ pre.raw{margin:0;max-height:360px;overflow:auto;font:12px/1.5 var(--mono);color:
     </div>
   </section>
 
+  <section class="panel" id="contact" aria-labelledby="contact-h">
+    <div class="panel-h"><h2 id="contact-h">Contact</h2></div>
+    <div class="contact">
+      <div style="display:grid;gap:6px;min-width:0">
+        <p class="ink2">Questions, corrections, Somali translation fixes or partnership ideas: write to</p>
+        <p class="mail" id="contact-mail">–</p>
+        <p class="muted small">Cimilada is an unofficial, non-commercial project. Official warnings come from the Somali Disaster Management Agency (SoDMA) and FAO SWALIM.</p>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <button type="button" class="btn" id="contact-copy">Copy email</button>
+        <a class="btn" id="contact-send" href="#">Send email</a>
+        <a class="btn" href="https://github.com/__REPO__" target="_blank" rel="noopener">Source code</a>
+        <span class="small" id="contact-ok" role="status" style="color:var(--good-ink)"></span>
+      </div>
+    </div>
+  </section>
+
   <footer>
     <span id="foot"></span>
     <span id="privacy" hidden>Visits and feature use are counted without cookies or personal data, to see what people use.</span>
@@ -426,6 +478,7 @@ pre.raw{margin:0;max-height:360px;overflow:auto;font:12px/1.5 var(--mono);color:
 </div>
 <div id="tip" role="tooltip"></div>
 
+<script id="contact-data" type="application/json">__CONTACT__</script>
 <script id="data" type="application/json">__DATA__</script>
 <script>
 (function(){
@@ -436,6 +489,9 @@ const ASOF = D.asof, MS = 864e5;
 const dnum = iso => Date.UTC(+iso.slice(0,4), +iso.slice(5,7)-1, +iso.slice(8,10))/MS;
 const diso = n => new Date(n*MS).toISOString().slice(0,10);
 const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+let LANG = 'en';
+try { if (localStorage.getItem('cimilada-lang')==='so') LANG = 'so'; } catch(e){}
+const say = (en, so) => LANG==='so' && so!=null ? so : en;   // pick the sentence for the current language
 const fmtD = iso => { const d=new Date(iso+'T00:00:00Z'); return d.getUTCDate()+' '+MON[d.getUTCMonth()]+' '+d.getUTCFullYear(); };
 const fmtDs = iso => { const d=new Date(iso+'T00:00:00Z'); return d.getUTCDate()+' '+MON[d.getUTCMonth()]; };
 const SEAS = {Jilaal:[1,3],Gu:[4,6],Hagaa:[7,9],Deyr:[10,12]};
@@ -490,7 +546,7 @@ const SHARE_BASE = '__SHARE_BASE__';
 const OVK = {wind:'w', cloud:'c', tc:'t', img:'i', barb:'b'}, FLK = {rain3:'R', rain24:'D', temp:'H', wspd:'S'};
 function viewToken(){
   const ov = Object.entries(OVK).filter(([k])=>state.ov[k]).map(([,c])=>c).join('') + ({ecmwf:'E', aifs:'A'}[state.model]||'') + (FLK[state.field]||'');
-  return [state.code, state.layer, state.season.s+state.season.y, ov||'x', state.view, (state.t<0?'m':'p')+Math.abs(state.t)].join('.');
+  return [state.code, state.layer, state.season.s+state.season.y, ov||'x', state.view, (state.t<0?'m':'p')+Math.abs(state.t), ...(LANG==='so'?['so']:[])].join('.');
 }
 function readToken(h){
   const p = h.replace(/^#/,'').split('.');
@@ -501,6 +557,7 @@ function readToken(h){
   if (p[4]) v.view = p[4];
   loadSaved(v);
   const t = /^([pm])(\d{1,3})$/.exec(p[5]||''); if (t) state.t = (t[1]==='m'?-1:1)*+t[2];
+  if (p[6]==='so' || p[6]==='en'){ LANG = p[6]; try { localStorage.setItem('cimilada-lang', LANG); } catch(e){} }
   return true;
 }
 readToken(location.hash);
@@ -539,18 +596,21 @@ function renderHeader(){
   const gauges = S.filter(s=>s.net==='Gauge'), aws = S.filter(s=>s.net==='AWS');
   const gRep = gauges.filter(s=>status(s)[0]==='good').length, aRep = aws.filter(s=>status(s)[0]==='good').length;
   const mid = M.scen[1];
-  document.getElementById('lede').innerHTML =
+  document.getElementById('lede').innerHTML = LANG==='so' ?
+    `<b>Deyr 2026 waxay u muuqataa sidii 1997 iyo 2023, labadii sano ee daadadka ugu xumaa diiwaanka.</b> El Niño waa mid xoog badan (Niño3.4 ${sgn(B.nino,2)} °C), Indian Ocean Dipole-na wuxuu u sii jeedaa dhinaca togan (${sgn(B.iod,2)} °C). Tan iyo 1981, Deyr kasta oo El Niño intan le’eg lahayd roobkeedu wuxuu ka badnaa dhexdhexaadka. ` +
+    `SEAS5 wuxuu saadaalinayaa in ${sm.seas5_wet} ka mid ah ${sm.seas5_n} saldhig ay helaan 125% caadiga ama ka badan. ` +
+    `<b>Gu 2026 roobkeedu wuu yaraa.</b> Saldhigyada cimiladu ma qabsan, laakiin ${sm.gu26_n} qalab roob ayaa diiwaangeliyay dhexdhexaad ${fmt(sm.gu26_median_pct)}% caadiga.` :
     `<b>Deyr 2026 is shaping up like 1997 and 2023, the two worst flood years in the record.</b> El Niño is strong (Niño3.4 ${sgn(B.nino,2)} °C) and the Indian Ocean Dipole is turning positive (${sgn(B.iod,2)} °C). Since 1981, every Deyr with an El Niño this strong has been wetter than the median. ` +
     `SEAS5 puts ${sm.seas5_wet} of ${sm.seas5_n} stations at 125% of normal or more. ` +
     `<b>Gu 2026 was poor.</b> The weather stations missed it, but ${sm.gu26_n} rain gauges recorded a median of ${fmt(sm.gu26_median_pct)}% of normal.`;
   const k = [
-    [`${fmt(mid.rain/M.mean*100)}<small>%</small>`, 'Deyr 2026, statistical', `Of the 1981–2025 mean if Sep–Nov IOD reaches ${sgn(mid.dmi,1)}. ${M.elnino_above_median} of ${M.elnino.length} El Niño Deyrs above median`],
-    [`${fmt(sm.seas5_median_pct)}<small>%</small>`, 'Deyr 2026, ECMWF SEAS5', `Median station, Oct–Dec against model normal. ${sm.seas5_wet} of ${sm.seas5_n} at 125% or more`],
-    [`${fmt(sm.gu26_median_pct)}<small>%</small>`, 'Gu 2026 observed', `Median of ${sm.gu26_n} gauges against CHIRPS normal. ${sm.gu26_below75} below 75%`],
-    [`${gRep}<small> / ${gauges.length}</small>`, 'Rain gauges reporting', `Within 14 days. Weather stations: ${aRep} of ${aws.length} within 3 days`],
+    [`${fmt(mid.rain/M.mean*100)}<small>%</small>`, 'Deyr 2026, statistical', say(`Of the 1981–2025 mean if Sep–Nov IOD reaches ${sgn(mid.dmi,1)}. ${M.elnino_above_median} of ${M.elnino.length} El Niño Deyrs above median`, `Celceliska 1981–2025 haddii IOD Sep–Nof gaaro ${sgn(mid.dmi,1)}. ${M.elnino_above_median} ka mid ah ${M.elnino.length} Deyr El Niño ah ayaa ka sarreeyay dhexdhexaadka`)],
+    [`${fmt(sm.seas5_median_pct)}<small>%</small>`, 'Deyr 2026, ECMWF SEAS5', say(`Median station, Oct–Dec against model normal. ${sm.seas5_wet} of ${sm.seas5_n} at 125% or more`, `Saldhigga dhexe, Okt–Dis marka loo eego caadiga moodalka. ${sm.seas5_wet} ka mid ah ${sm.seas5_n} waa 125% ama ka badan`)],
+    [`${fmt(sm.gu26_median_pct)}<small>%</small>`, 'Gu 2026 observed', say(`Median of ${sm.gu26_n} gauges against CHIRPS normal. ${sm.gu26_below75} below 75%`, `Dhexdhexaadka ${sm.gu26_n} qalab marka loo eego caadiga CHIRPS. ${sm.gu26_below75} ayaa ka hooseeya 75%`)],
+    [`${gRep}<small> / ${gauges.length}</small>`, 'Rain gauges reporting', say(`Within 14 days. Weather stations: ${aRep} of ${aws.length} within 3 days`, `14 maalmood gudahood. Saldhigyada cimilada: ${aRep} ka mid ah ${aws.length} 3 maalmood gudahood`)],
   ];
   document.getElementById('kpis').innerHTML = k.map(([v,l,d])=>`<div class="kpi"><span class="eyebrow">${l}</span><span class="v">${v}</span><span class="d">${d}</span></div>`).join('');
-  document.getElementById('foot').textContent = `Station data to ${fmtD(ASOF)}. Built ${fmtD(D.built)}. ${gauges.length} rain gauges and ${aws.length} weather stations from SWALIM ClimSeries.`;
+  document.getElementById('foot').textContent = say(`Station data to ${fmtD(ASOF)}. Built ${fmtD(D.built)}. ${gauges.length} rain gauges and ${aws.length} weather stations from SWALIM ClimSeries.`, `Xogta saldhigyada ilaa ${fmtD(ASOF)}. La dhisay ${fmtD(D.built)}. ${gauges.length} qalab roob iyo ${aws.length} saldhig cimilo oo ka yimid SWALIM ClimSeries.`);
 }
 
 // ---------- outlook ----------
@@ -694,11 +754,13 @@ function renderMap(){
     <text x="${px(46.3)}" y="${py(12.0)}" style="font:600 11px var(--sans);${sea};letter-spacing:.1em">GULF OF ADEN</text>${dots}</svg>`;
   if (WX){ paintField(); paintClouds(); bindTc(m); paintBarbs(); renderProbe(); }
   const {y,s:sn} = state.season;
-  const T = {deyr26:['Deyr 2026 forecast','Dots: ECMWF SEAS5 Oct–Dec rainfall as % of the model\'s own normal (51 members, run of September 2026). Background: CHIRPS Deyr rainfall in the five El Niño years since 1981, as % of normal.'],
+  const T = LANG==='so' ? {deyr26:['Saadaasha Deyr 2026','Dhibcaha: roobka Okt–Dis ee ECMWF SEAS5 sida % caadiga moodalka (51 xubnood, Sebtembar 2026). Gadaasha: roobka Deyrta ee CHIRPS shantii sano ee El Niño tan iyo 1981, sida % caadiga.'],
+    gefs:[`Saadaasha roobka laga bilaabo ${fmtDs(D.grids.gefs_start)}, 16 maalmood`, 'CHIRPS3-GEFS: saadaasha GEFS ee NOAA oo lagu saxay CHIRPS v3, 5 km. Dhibcuhu waxay muujinayaan qiimaha saldhig kasta.'],
+    season:[`${sn} ${y}, % caadiga`, 'Wadarta xilliga ee saldhig kasta marka loo eego caadiga CHIRPS v3 1991–2020. Xilliyada leh 80% maalmaha oo la diiwaangeliyay oo keliya ayaa midab leh.']}[state.layer] : {deyr26:['Deyr 2026 forecast','Dots: ECMWF SEAS5 Oct–Dec rainfall as % of the model\'s own normal (51 members, run of September 2026). Background: CHIRPS Deyr rainfall in the five El Niño years since 1981, as % of normal.'],
     gefs:[`Rain forecast from ${fmtDs(D.grids.gefs_start)}, 16 days`, 'CHIRPS3-GEFS: NOAA GEFS ensemble forecast, bias-corrected to CHIRPS v3, 5 km. Dots show the value at each station.'],
     season:[`${sn} ${y}, % of normal`, 'Each station\'s season total against the CHIRPS v3 1991–2020 normal at that point. Only seasons with 80% of days recorded are coloured.']}[state.layer];
   document.getElementById('map-title').textContent = T[0];
-  document.getElementById('map-note').textContent = T[1] + ' Click a station for detail.';
+  document.getElementById('map-note').textContent = T[1] + say(' Click a station for detail.', ' Guji saldhig si aad faahfaahin u aragto.');
   m.querySelectorAll('.stn').forEach(g=>{
     const st = byCode[g.dataset.code], v = mapValue(st);
     const html = () => `<b>${esc(label(st))}</b>${st.region?' · '+esc(st.region):''}<br>${v?v.t:'No value for this layer'}<br>${status(st)[1]}${windAt(st.lon,st.lat,'<br>Wind ')}`;
@@ -898,11 +960,11 @@ function renderTimeline(){
   if (!need){ stopPlay(); return; }
   tl.r.min = TMIN; tl.r.max = TMAX; tl.r.value = state.t;
   const d = new Date(T0+state.t*HR), hh = String(d.getUTCHours()).padStart(2,'0'), eat = String((d.getUTCHours()+3)%24).padStart(2,'0');
-  const rel = state.t===0 ? 'latest satellite image' : state.t<0 ? `${-state.t} h ago, observed` : `+${state.t} h, forecast`;
+  const rel = state.t===0 ? say('latest satellite image','sawirkii dayax-gacmeedka ee ugu dambeeyay') : state.t<0 ? say(`${-state.t} h ago, observed`, `${-state.t} saacadood ka hor, la arkay`) : say(`+${state.t} h, forecast`, `+${state.t} saacadood, saadaal`);
   const extra = [];
-  if (state.ov.cloud && state.t>0) extra.push('clouds are observed, so they stop at the latest image');
-  if (state.ov.wind && state.view==='2d' && !prepField()) extra.push(`no ${state.model.toUpperCase()} wind for this hour`);
-  tl.lbl.innerHTML = `<b>${DOW[d.getUTCDay()]} ${d.getUTCDate()} ${MON[d.getUTCMonth()]}, ${hh}:00 UTC</b> (${eat}:00 in Mogadishu) · ${rel}${extra.length?' · '+extra.join(' · '):''}`;
+  if (state.ov.cloud && state.t>0) extra.push(say('clouds are observed, so they stop at the latest image', 'daruuraha waa la arkay, sidaas darteed waxay ku egyihiin sawirkii ugu dambeeyay'));
+  if (state.ov.wind && state.view==='2d' && !prepField()) extra.push(say(`no ${state.model.toUpperCase()} wind for this hour`, `dabaysha ${state.model.toUpperCase()} lagama hayo saacaddan`));
+  tl.lbl.innerHTML = `<b>${DOW[d.getUTCDay()]} ${d.getUTCDate()} ${MON[d.getUTCMonth()]}, ${hh}:00 UTC</b> (${eat}:00 ${say('in Mogadishu','Muqdisho')}) · ${rel}${extra.length?' · '+extra.join(' · '):''}`;
 }
 function setT(t){
   state.t = Math.max(TMIN, Math.min(TMAX, Math.round(t)));
@@ -1166,7 +1228,7 @@ function renderFieldLegend(){
   el.hidden = !(WX && state.field && state.view==='2d');
   if (el.hidden) return;
   const F = FIELD[state.field], ok = !!fieldGrid();
-  el.innerHTML = `<b>${F.name}</b> · ${MODEL_NAME[state.model]}` + (ok ? (state.field==='wspd' ? [`< ${spd(F.br[0])}`, ...F.br.slice(0,-1).map((b,i)=>`${fmt(b*UNIT[state.unit][0])}–${spd(F.br[i+1])}`), `> ${spd(F.br[F.br.length-1])}`] : F.lbl).map((l,i)=>`<span><i class="sw" style="background:var(${F.tok}${i})"></i>${l}</span>`).join('') : ' · not available at this hour') + '<span class="muted">Station dots keep the map layer.</span>';
+  el.innerHTML = `<b>${F.name}</b> · ${MODEL_NAME[state.model]}` + (ok ? (state.field==='wspd' ? [`< ${spd(F.br[0])}`, ...F.br.slice(0,-1).map((b,i)=>`${fmt(b*UNIT[state.unit][0])}–${spd(F.br[i+1])}`), `> ${spd(F.br[F.br.length-1])}`] : F.lbl).map((l,i)=>`<span><i class="sw" style="background:var(${F.tok}${i})"></i>${l}</span>`).join('') : say(' · not available at this hour', ' · laguma hayo saacaddan')) + '<span class="muted">Station dots keep the map layer.</span>';
 }
 
 // ---------- station forecast: daily totals from each model's grid ----------
@@ -1217,7 +1279,7 @@ function renderStFc(st){
   s += `<rect id="sf-hit" x="${L}" y="${T}" width="${pw}" height="${ph+B-8}" fill="transparent"/></svg>`;
   const allDry = ks.every(k=>models[k].every(o=>o.rain==null || o.rain<0.5));
   const el = document.getElementById('st-fc');
-  el.innerHTML = s + `<p class="muted small">${allDry?'<b style="color:var(--ink2)">All models keep this site dry for the week.</b> ':''}From the 0.5° model grid at this point. Today counts only the rest of the day; days are Somali local time. Bottom row: highest temperature, median of the models.</p>`;
+  el.innerHTML = s + `<p class="muted small">${allDry?`<b style="color:var(--ink2)">${say('All models keep this site dry for the week.','Dhammaan moodallada waxay saadaalinayaan in goobtani qalalan tahay toddobaadkan.')}</b> `:''}${say('From the 0.5° model grid at this point. Today counts only the rest of the day; days are Somali local time. Bottom row: highest temperature, median of the models.', 'Waxaa laga soo qaatay shabakadda moodalka 0.5° ee goobtan. Maanta waxaa lagu tiriyaa inta ka hartay maalinta oo keliya; maalmuhu waa waqtiga Soomaaliya. Safka hoose: heerkulka ugu sarreeya, dhexdhexaadka moodallada.')}</p>`;
   const sv = el.querySelector('svg');
   el.querySelector('#sf-hit').addEventListener('mousemove', e=>{
     const q = svgPoint(sv, e), i = Math.max(0, Math.min(6, Math.floor((q.x-L)/gw)));
@@ -1251,17 +1313,17 @@ function renderTowns(){
       const k = TBINS.rain.filter(b=>o.pr10>=b).length, txt = o.med>=1 ? fmt(o.med) : o.pr1>=0.5 ? '<1' : '';
       return `<td><div class="cell${k?'':' blank'}" data-t="${ti}" data-j="${j}" style="${k?`background:var(--s${k});color:var(--st${k})`:''}">${txt||'·'}</div></td>`;
     }).join('') + `<td><div class="cell${t.pr50_72h>=0.3?'':' blank'}" style="${t.pr50_72h>=0.6?'background:var(--crit);color:#fff':t.pr50_72h>=0.3?'background:var(--warn);color:#3a2a00':''}">${pctS(t.pr50_72h)}</div></td></tr>`).join('') + '</tbody>';
-    sub = `ECMWF ensemble, ${tw[0].n} members, built ${FC.built.replace('T',' ')} UTC. Colour: chance of 10 mm or more that day. Number: median of the members in mm. Days are Somali local days; Friday is marked. Last column: chance of 50 mm or more in any 3 consecutive days, SWALIM's 72-hour window.`;
+    sub = say(`ECMWF ensemble, ${tw[0].n} members, built ${FC.built.replace('T',' ')} UTC. Colour: chance of 10 mm or more that day. Number: median of the members in mm. Days are Somali local days; Friday is marked. Last column: chance of 50 mm or more in any 3 consecutive days, SWALIM's 72-hour window.`, `Saadaasha kooxda ECMWF, ${tw[0].n} xubnood, la sameeyay ${FC.built.replace('T',' ')} UTC. Midabka: fursadda 10 mm ama ka badan maalintaas. Tirada: dhexdhexaadka xubnaha (mm). Maalmuhu waa waqtiga Soomaaliya; Jimcaha waa la calaamadeeyay. Tiirka ugu dambeeya: fursadda 50 mm ama ka badan 3 maalmood oo isku xiga (muddada 72 saacadood ee SWALIM).`);
     lg = ['10–30%','30–50%','50–70%','70–90%','90% or more'].map((l,i)=>`<span><i class="sw" style="background:var(--s${i+1})"></i>${l}</span>`).join('') + '<span>chance of 10 mm or more</span>';
   } else if (v==='heat'){
     const days = tw.find(t=>t.heat).heat.days;
     h = head(days) + '</tr></thead><tbody>' + tw.map((t,ti)=>row(t) + (t.heat ? t.heat.at.map((a,j)=>{ if (a==null) return '<td><div class="cell blank">–</div></td>'; const k = TBINS.heat.filter(b=>a>=b).length; return `<td><div class="cell" data-t="${ti}" data-j="${j}" style="background:var(--h${k});color:${k>=5||k===0?'#fff':'#2a1a0a'}">${fmt(a)}°</div></td>`; }).join('') : '') + '</tr>').join('') + '</tbody>';
-    sub = 'Highest feels-like (apparent) temperature of the day, which adds humidity and wind to air temperature. Best-match Open-Meteo forecast. On the US heat index scale, about 41 °C and above is dangerous with long exposure; humid coastal towns reach it before the hotter, drier interior.';
+    sub = say('Highest feels-like (apparent) temperature of the day, which adds humidity and wind to air temperature. Best-match Open-Meteo forecast. On the US heat index scale, about 41 °C and above is dangerous with long exposure; humid coastal towns reach it before the hotter, drier interior.', 'Heerkulka ugu sarreeya ee la dareemo maalintii, oo ku daraya qoyaanka iyo dabaysha. Qiyaas ahaan 41 °C iyo wixii ka sarreeya waa khatar haddii muddo dheer qofku ku jiro; magaalooyinka xeebta ee qoyaanka leh ayaa gaara ka hor gudaha kulul ee qalalan.');
     lg = ['< 25','25–30','30–34','34–38','38–42','42–46','46 °C or more'].map((l,i)=>`<span><i class="sw" style="background:var(--h${i})"></i>${l}</span>`).join('');
   } else {
     const days = tw.find(t=>t.dust).dust.days;
     h = head(days) + '</tr></thead><tbody>' + tw.map((t,ti)=>row(t) + (t.dust ? t.dust.dust.map((a,j)=>{ if (a==null) return '<td><div class="cell blank">–</div></td>'; const k = TBINS.dust.filter(b=>a>=b).length; return `<td><div class="cell${k?'':' blank'}" data-t="${ti}" data-j="${j}" style="${k?`background:var(--h${k+2});color:${k>=3?'#fff':'#2a1a0a'}`:''}">${fmt(a)}</div></td>`; }).join('') : '') + '</tr>').join('') + '</tbody>';
-    sub = 'Highest hourly dust concentration near the ground, µg/m³, from the CAMS global forecast (Copernicus). Dust from the Ogaden and the Gulf of Aden coast peaks in the windy Hagaa; levels above a few hundred are unhealthy for everyone.';
+    sub = say('Highest hourly dust concentration near the ground, µg/m³, from the CAMS global forecast (Copernicus). Dust from the Ogaden and the Gulf of Aden coast peaks in the windy Hagaa; levels above a few hundred are unhealthy for everyone.', 'Heerka ugu sarreeya ee boodhka saacaddii, µg/m³, saadaasha CAMS (Copernicus). Boodhka Ogaadeenka iyo xeebta Gacanka Cadmeed wuxuu ugu badan yahay Xagaaga dabaylaha badan; dhowr boqol iyo ka sareeya waa caafimaad darro qof walba.');
     lg = ['50–100','100–250','250–600','600 or more'].map((l,i)=>`<span><i class="sw" style="background:var(--h${i+3})"></i>${l}</span>`).join('') + '<span>µg/m³</span>';
   }
   tbl.innerHTML = h.replace(/<tr>(<th class="row" data-t="(\d+)")/g, (m, a, i)=>`<tr class="${tw[+i].name===state.town?'sel':''}">${a}`);
@@ -1287,7 +1349,7 @@ document.querySelectorAll('.seg button[data-tv]').forEach(b=>b.addEventListener(
 function renderRiversFc(){
   const grid = document.getElementById('rivers-fc-grid'), head = document.getElementById('rivers-fc');
   if (!FC){ grid.hidden = head.hidden = true; return; }
-  document.getElementById('rvf-sub').textContent = `GloFAS v4 ensemble via Open-Meteo, m³/s, built ${FC.built.slice(0,10)}. Each gauge uses the nearest model cell on the main channel.`;
+  document.getElementById('rvf-sub').textContent = LANG==='so' ? `Kooxda GloFAS v4 (Open-Meteo), m³/s, la sameeyay ${FC.built.slice(0,10)}. Qalab kasta wuxuu isticmaalaa unugga moodalka ee ugu dhow ee webiga weyn.` : `GloFAS v4 ensemble via Open-Meteo, m³/s, built ${FC.built.slice(0,10)}. Each gauge uses the nearest model cell on the main channel.`;
   grid.innerHTML = FC.rivers.map((r,ri)=>{
     const o = riverOutlook(r), n = r.time.length, ref = r.ref2023 && r.ref2023.peak;
     const W=320, H=140, L=40, R_=8, T=10, B=18, pw=W-L-R_, ph=H-T-B;
@@ -1324,7 +1386,7 @@ function renderRiversFc(){
 const hsLv = v => v>=4 ? 'crit' : v>=2.5 ? 'serious' : v>=1.25 ? 'warn' : 'good';
 function renderMarine(){
   const sec = document.getElementById('marine'); if (!FC){ sec.hidden = true; return; }
-  document.getElementById('marine-sub').textContent = 'Daily highest significant wave height, Open-Meteo marine models. In the Hagaa (July–September) the south-west monsoon keeps the Indian Ocean coast rough and small ports close.';
+  document.getElementById('marine-sub').textContent = LANG==='so' ? 'Mowjadaha ugu sarreeya maalintii, moodallada badda ee Open-Meteo. Xagaaga (Luulyo–Sebtembar) dabaysha koonfur-galbeed waxay ka dhigtaa xeebta Badweynta Hindiya mid kacsan, dekedaha yaryarna way xirmaan.' : 'Daily highest significant wave height, Open-Meteo marine models. In the Hagaa (July–September) the south-west monsoon keeps the Indian Ocean coast rough and small ports close.';
   document.getElementById('ports').innerHTML = FC.marine.map((p,pi)=>{
     const W=300, H=150, L=28, R_=6, T=22, B=30, pw=W-L-R_, ph=H-T-B, n = p.days.length;
     const mx = Math.max(...p.hs.filter(v=>v!=null)), top = Math.max(3, Math.ceil(mx+0.5));
@@ -1360,8 +1422,8 @@ const spd = v => fmt(v*UNIT[state.unit][0], UNIT[state.unit][2]) + ' ' + UNIT[st
 function ageBadge(iso){
   if (!iso) return '';
   const h = (Date.now() - Date.parse(iso.slice(0,16)+':00Z'))/HR;
-  const txt = h<1 ? 'under 1 h old' : h<48 ? `${Math.round(h)} h old` : `${Math.round(h/24)} days old`;
-  return `<span class="age${h>24?' stale':''}" title="Fetched ${esc(iso.replace('T',' '))} UTC">${txt}${h>24?', refresh due':''}</span>`;
+  const txt = h<1 ? say('under 1 h old','ka yar 1 saac') : h<48 ? say(`${Math.round(h)} h old`, `${Math.round(h)} saac jir`) : say(`${Math.round(h/24)} days old`, `${Math.round(h/24)} maalmood jir`);
+  return `<span class="age${h>24?' stale':''}" title="Fetched ${esc(iso.replace('T',' '))} UTC">${txt}${h>24?say(', refresh due',', cusbooneysiin ayaa loo baahan yahay'):''}</span>`;
 }
 function copyText(text, okEl){
   const done = msg => { okEl.textContent = msg; setTimeout(()=>{ okEl.textContent = ''; }, 2500); };
@@ -1502,32 +1564,32 @@ function buildHazards(){
     const tw = FC.towns, top = [...tw].sort((a,b)=>b.pr50_72h-a.pr50_72h);
     const hit = top.filter(t=>t.pr50_72h>=0.3);
     out.push({id:'towns', title:'Heavy rain', event:'Heavy rain', cat:'Met', lv: lvlOf(top[0].pr50_72h, .3, .5, .7), p: top[0].pr50_72h, places: hit,
-      text: hit.length ? `${hit.length} town${hit.length>1?'s':''} with a 30% or higher chance of 50 mm within 3 days: ${hit.slice(0,4).map(t=>`${t.name} ${pctS(t.pr50_72h)}`).join(', ')}.` : `No town reaches a 30% chance of 50 mm within 3 days. Highest: ${top[0].name}, ${pctS(top[0].pr50_72h)}.`,
+      text: say(hit.length ? `${hit.length} town${hit.length>1?'s':''} with a 30% or higher chance of 50 mm within 3 days: ${hit.slice(0,4).map(t=>`${t.name} ${pctS(t.pr50_72h)}`).join(', ')}.` : `No town reaches a 30% chance of 50 mm within 3 days. Highest: ${top[0].name}, ${pctS(top[0].pr50_72h)}.`, hit.length ? `${hit.length} magaalo ayaa leh fursad 30% ama ka badan oo 50 mm roob ah 3 maalmood gudahood: ${hit.slice(0,4).map(t=>`${t.name} ${pctS(t.pr50_72h)}`).join(', ')}.` : `Ma jirto magaalo gaartay fursad 30% ah oo 50 mm roob ah 3 maalmood gudahood. Ugu sarreeya: ${top[0].name}, ${pctS(top[0].pr50_72h)}.`),
       rule:'Chance of 50 mm or more in 72 h: 30% yellow, 50% orange, 70% red'});
     const ro = FC.rivers.map(r=>({r, ...riverOutlook(r)})).filter(o=>o.ratio!=null).sort((a,b)=>b.ratio-a.ratio);
     const fr = D.rivers.map(r=>{ const c = [...r.cur].reverse().find(a=>a[1]!=null && a[1]!=='---'); const I = r.ind||{}; return c ? {name:r.name, v:+c[1], lv: +c[1]>=+I.highRiskLevelVal ? 3 : +c[1]>=+I.moderateRiskLevelVal ? 2 : 0} : null; }).filter(Boolean);
     const frLv = Math.max(0, ...fr.map(o=>o.lv)), glLv = ro.length ? lvlOf(ro[0].ratio, .6, .8, 1) : 0;
     const atRisk = fr.filter(o=>o.lv);
     out.push({id:'rivers-fc', title:'River flooding', event:'Riverine flood', cat:'Met', lv: Math.max(frLv, glLv), p: frLv ? 1 : ro.length ? Math.min(1, ro[0].ratio) : 0, places: ro.filter(o=>o.ratio>=.6).map(o=>({name:o.r.name, lat:o.r.lat, lon:o.r.lon})),
-      text: (atRisk.length ? `Gauges at flood risk now: ${atRisk.map(o=>o.name).join(', ')}. ` : 'All six gauges are below moderate flood risk. ') + (ro.length ? `GloFAS peaks at ${fmt(ro[0].ratio*100)}% of the model's 2023 flood flow (${esc(ro[0].r.name)}, ${fmtDs(ro[0].date)}).` : ''),
+      text: say((atRisk.length ? `Gauges at flood risk now: ${atRisk.map(o=>o.name).join(', ')}. ` : 'All six gauges are below moderate flood risk. ') + (ro.length ? `GloFAS peaks at ${fmt(ro[0].ratio*100)}% of the model's 2023 flood flow (${esc(ro[0].r.name)}, ${fmtDs(ro[0].date)}).` : ''), (atRisk.length ? `Qalabka hadda khatarta daadku ku jirto: ${atRisk.map(o=>o.name).join(', ')}. ` : 'Lixda qalab dhammaantood waxay ka hooseeyaan khatarta daadka dhexdhexaadka ah. ') + (ro.length ? `GloFAS wuxuu gaarayaa ${fmt(ro[0].ratio*100)}% socodkii daadkii 2023 ee moodalka (${esc(ro[0].r.name)}, ${fmtDs(ro[0].date)}).` : '')),
       rule:'GloFAS median vs its 2023 flood peak: 60% yellow, 80% orange, 100% red; FRRIMS moderate level orange, high level red'});
     const ports = FC.marine.map(p=>({...p, mx: Math.max(...p.hs.filter(v=>v!=null))})).sort((a,b)=>b.mx-a.mx);
     out.push({id:'marine', title:'High seas', event:'High seas', cat:'Met', lv: lvlOf(ports[0].mx, 2.5, 3.5, 4.5), p: 1, places: ports.filter(o=>o.mx>=2.5),
-      text: ports[0].mx>=2.5 ? `Waves of 2.5 m or more at ${ports.filter(o=>o.mx>=2.5).map(o=>o.name).join(', ')}; highest ${fmt(ports[0].mx,1)} m at ${ports[0].name}.` : `Waves stay under 2.5 m at all eight ports; highest ${fmt(ports[0].mx,1)} m at ${ports[0].name}.`,
+      text: say(ports[0].mx>=2.5 ? `Waves of 2.5 m or more at ${ports.filter(o=>o.mx>=2.5).map(o=>o.name).join(', ')}; highest ${fmt(ports[0].mx,1)} m at ${ports[0].name}.` : `Waves stay under 2.5 m at all eight ports; highest ${fmt(ports[0].mx,1)} m at ${ports[0].name}.`, ports[0].mx>=2.5 ? `Mowjado 2.5 m ama ka badan: ${ports.filter(o=>o.mx>=2.5).map(o=>o.name).join(', ')}; ugu sarreeya ${fmt(ports[0].mx,1)} m, ${ports[0].name}.` : `Mowjaduhu way ka hooseeyaan 2.5 m dhammaan siddeedda deked; ugu sarreeya ${fmt(ports[0].mx,1)} m, ${ports[0].name}.`),
       rule:'Daily highest wave height: 2.5 m yellow, 3.5 m orange, 4.5 m red'});
     const hot = tw.filter(t=>t.heat).map(t=>({...t, mx: Math.max(...t.heat.at.filter(v=>v!=null))})).sort((a,b)=>b.mx-a.mx);
     if (hot.length) out.push({id:'towns', tv:'heat', title:'Heat stress', event:'Extreme heat', cat:'Met', lv: lvlOf(hot[0].mx, 40, 43, 46), p: 1, places: hot.filter(o=>o.mx>=40),
-      text: hot[0].mx>=40 ? `Feels-like temperature of 40 °C or more at ${hot.filter(o=>o.mx>=40).map(o=>o.name).join(', ')}; highest ${fmt(hot[0].mx)} °C at ${hot[0].name}.` : `Feels-like temperature stays under 40 °C; highest ${fmt(hot[0].mx)} °C at ${hot[0].name}.`,
+      text: say(hot[0].mx>=40 ? `Feels-like temperature of 40 °C or more at ${hot.filter(o=>o.mx>=40).map(o=>o.name).join(', ')}; highest ${fmt(hot[0].mx)} °C at ${hot[0].name}.` : `Feels-like temperature stays under 40 °C; highest ${fmt(hot[0].mx)} °C at ${hot[0].name}.`, hot[0].mx>=40 ? `Kulaylka la dareemo oo 40 °C ama ka badan: ${hot.filter(o=>o.mx>=40).map(o=>o.name).join(', ')}; ugu sarreeya ${fmt(hot[0].mx)} °C, ${hot[0].name}.` : `Kulaylka la dareemo wuu ka hooseeyaa 40 °C; ugu sarreeya ${fmt(hot[0].mx)} °C, ${hot[0].name}.`),
       rule:'Highest feels-like temperature: 40 °C yellow, 43 °C orange, 46 °C red'});
     const dusty = tw.filter(t=>t.dust).map(t=>({...t, mx: Math.max(0, ...t.dust.dust.filter(v=>v!=null))})).sort((a,b)=>b.mx-a.mx);
     if (dusty.length) out.push({id:'towns', tv:'dust', title:'Dust', event:'Dust storm', cat:'Env', lv: lvlOf(dusty[0].mx, 250, 600, 1200), p: 1, places: dusty.filter(o=>o.mx>=250),
-      text: dusty[0].mx>=250 ? `Dust of 250 µg/m³ or more at ${dusty.filter(o=>o.mx>=250).map(o=>o.name).join(', ')}; highest ${fmt(dusty[0].mx)} at ${dusty[0].name}.` : `Dust stays under 250 µg/m³; highest ${fmt(dusty[0].mx)} µg/m³ at ${dusty[0].name}.`,
+      text: say(dusty[0].mx>=250 ? `Dust of 250 µg/m³ or more at ${dusty.filter(o=>o.mx>=250).map(o=>o.name).join(', ')}; highest ${fmt(dusty[0].mx)} at ${dusty[0].name}.` : `Dust stays under 250 µg/m³; highest ${fmt(dusty[0].mx)} µg/m³ at ${dusty[0].name}.`, dusty[0].mx>=250 ? `Boodh 250 µg/m³ ama ka badan: ${dusty.filter(o=>o.mx>=250).map(o=>o.name).join(', ')}; ugu sarreeya ${fmt(dusty[0].mx)}, ${dusty[0].name}.` : `Boodhku wuu ka hooseeyaa 250 µg/m³; ugu sarreeya ${fmt(dusty[0].mx)} µg/m³, ${dusty[0].name}.`),
       rule:'Highest hourly dust: 250 µg/m³ yellow, 600 orange, 1,200 red'});
   }
   if (WX){
     const A = WX.active||[];
     out.push({id:'maparea', tc:true, title:'Tropical cyclones', event:'Tropical cyclone', cat:'Met', lv: A.length ? 2 : 0, p: A.length ? 1 : 0, places: A.map(a=>({name:a.name, lat:a.lat, lon:a.lon})),
-      text: A.length ? `Active: ${A.map(a=>esc(a.name)).join(', ')}. Tracks are on the map.` : 'No active storm in the North Indian Ocean (GDACS). The Deyr is also the second cyclone season; Gati made landfall in November 2020.',
+      text: say(A.length ? `Active: ${A.map(a=>esc(a.name)).join(', ')}. Tracks are on the map.` : 'No active storm in the North Indian Ocean (GDACS). The Deyr is also the second cyclone season; Gati made landfall in November 2020.', A.length ? `Firfircoon: ${A.map(a=>esc(a.name)).join(', ')}. Waddooyinka waxay ku yaallaan khariidadda.` : 'Ma jiro duufaan firfircoon oo ku jira waqooyiga Badweynta Hindiya (GDACS). Deyrtu sidoo kale waa xilliga labaad ee duufaannada; Gati wuxuu xeebta ku dhuftay Nofembar 2020.'),
       rule:'Any active storm in the basin: orange'});
   }
   out.forEach(o=>{ o.sev = CAPSEV[o.lv]; o.cert = o.p>=0.5 ? 'Likely' : o.p>0 ? 'Possible' : 'Unlikely'; o.urg = o.lv ? 'Future' : 'Unknown'; });
@@ -1538,12 +1600,13 @@ function renderHazards(){
   const el = document.getElementById('hz');
   el.innerHTML = HAZ.map((o,i)=>`<a class="${WMO[o.lv].cls}" href="#${o.id}" data-i="${i}" title="${esc(o.rule)}"><span class="t">${o.title}<span class="lv">${WMO[o.lv].name} · ${WMO[o.lv].act}</span></span><span>${o.text}</span><span class="cap"><span>Severity <b>${o.sev}</b></span><span>Certainty <b>${o.cert}</b></span><span>Urgency <b>${o.urg}</b></span></span></a>`).join('');
   el.querySelectorAll('a').forEach(a=>a.addEventListener('click', ()=>{ const o = HAZ[+a.dataset.i]; if (o.tv){ state.tv = o.tv; renderTowns(); } if (o.tc && WX){ state.ov.tc = true; save(); renderMap(); renderWx(); } }));
-  document.getElementById('hz-sub').innerHTML = FC ? `From the forecasts on this page, built ${esc(FC.built.replace('T',' '))} UTC · ${ageBadge(FC.built)}` : 'Forecast data not built';
+  document.getElementById('hz-sub').innerHTML = FC ? say(`From the forecasts on this page, built ${esc(FC.built.replace('T',' '))} UTC · ${ageBadge(FC.built)}`, `Laga soo qaatay saadaasha boggan, la sameeyay ${esc(FC.built.replace('T',' '))} UTC · ${ageBadge(FC.built)}`) : 'Forecast data not built';
   const n = HAZ.filter(o=>o.lv).length;
   document.getElementById('cap-btn').textContent = `${document.getElementById('cap-box').hidden ? 'Show' : 'Hide'} CAP 1.2 alerts (${n})`;
 }
 const xe = s => String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
 function capXML(){
+  const cur = LANG; LANG = 'en'; const HAZ = buildHazards(); LANG = cur;
   const sent = (FC ? FC.built : new Date().toISOString().slice(0,16)) + ':00+00:00', exp = new Date(Date.parse(sent)+7*24*HR).toISOString().slice(0,19)+'+00:00';
   const act = HAZ.filter(o=>o.lv);
   if (!act.length) return `<!-- No hazard at yellow or above for the next 7 days; no CAP alert is generated. -->`;
@@ -1591,7 +1654,7 @@ function renderEps(){
   box.hidden = !t || state.tv!=='rain';
   if (box.hidden) return;
   const nd = t.days.filter((d,j)=>t.d[j]).length, days = t.days.slice(0, nd);
-  document.getElementById('eps-title').textContent = `${t.name}: ensemble rain and highest temperature, ${t.n} members`;
+  document.getElementById('eps-title').textContent = say(`${t.name}: ensemble rain and highest temperature, ${t.n} members`, `${t.name}: roobka kooxda iyo heerkulka ugu sarreeya, ${t.n} xubnood`);
   const W=640, L=40, R_=10, pw=W-L-R_, gw = pw/nd, H1=150, H2=110, gap=26, H=12+H1+gap+H2+40;
   const pmax = ticksCover(Math.max(5, ...t.d.slice(0,nd).map(o=>o.max||0))), pm = pmax[pmax.length-1];
   const txs = t.d.slice(0,nd).flatMap(o=>o.txq||[]).filter(v=>v!=null), tlo = Math.floor(Math.min(...txs)), thi = Math.ceil(Math.max(...txs));
@@ -1980,6 +2043,113 @@ function update(){
   document.getElementById('f-layer').value = state.layer;
   renderLegend(); renderMap(); renderDetail(); renderLedger(); renderHeat(); renderHealth(); renderWx(); renderRaw();
 }
+// ---------- language: English by default, Somali on request ----------
+// Fixed labels are translated from SO by text match (a MutationObserver also catches anything
+// rendered later); sentences built from data use say(english, somali). Long technical notes stay English.
+const SO = {
+  'Hazards':'Khataraha', 'Forecast map':'Khariidadda saadaasha', 'Town forecasts':'Saadaasha magaalooyinka', 'Rivers and floods':'Webiyada iyo daadadka',
+  'Deyr outlook':'Saadaasha Deyrta', 'Seas':'Badda', 'Seasons':'Xilliyada', 'Regions':'Gobollada', 'Stations':'Saldhigyada', 'Data':'Xogta', 'Contact':'La xiriir',
+  'Weather forecasts and water balance for Somalia':'Saadaasha hawada iyo dheelitirka biyaha ee Soomaaliya', 'Somalia weather forecasts':'Saadaasha hawada Soomaaliya',
+  'Hazards, next 7 days':'Khataraha, 7-da maalmood ee soo socda', 'Green: no warning':'Cagaar: digniin ma jirto', 'Yellow: be aware':'Jaalle: ka feejignow',
+  'Orange: be prepared':'Oranji: diyaar garow', 'Red: take action':'Casaan: tallaabo qaad', 'WMO impact-based warning colours':'Midabada digniinta ee WMO', 'Copy XML':'Koobiyee XML',
+  'Heavy rain':'Roob culus', 'River flooding':'Fatahaadda webiyada', 'High seas':'Bad kacsan', 'Heat stress':'Kulayl daran', 'Dust':'Boodh', 'Tropical cyclones':'Duufaannada kulaylaha',
+  'Severity':'Darnaanta', 'Certainty':'Hubaasha', 'Urgency':'Degdegga',
+  'Map layer':'Lakabka khariidadda', 'Deyr 2026 forecast (SEAS5)':'Saadaasha Deyr 2026 (SEAS5)', 'Next 16 days (CHIRPS3-GEFS)':'16-ka maalmood ee soo socda (CHIRPS3-GEFS)',
+  'Observed season, % of normal':'Xilligii la diiwaangeliyay, % caadiga', 'Season':'Xilliga', 'Station':'Saldhigga',
+  'Copy link to this view':'Koobiyee xiriirka muuqaalkan', 'Link copied':'Xiriirka waa la koobiyeeyay', 'Copy the selected link':'Koobiyee xiriirka la doortay',
+  'Map':'Khariidad', '3D terrain':'Dhul 3D ah', 'Wind':'Dabayl', 'Clouds':'Daruuro', 'Wind barbs':'Calaamadaha dabaysha', 'Cyclone tracks':'Waddooyinka duufaannada',
+  'Satellite basemap':'Sawir dayax-gacmeed', 'No forecast field':'Lakab saadaal ah ma jiro', 'Rain, 3 hours':'Roob, 3 saacadood', 'Rain, next 24 hours':'Roob, 24-ka saacadood ee soo socda',
+  'Temperature':'Heerkul', 'Wind speed':'Xawaaraha dabaysha', 'Play':'Daar', 'Pause':'Jooji', 'Now':'Hadda',
+  'Point forecast':'Saadaasha goobta', 'Copy CSV':'Koobiyee CSV', 'Copied':'Waa la koobiyeeyay', 'Close':'Xir',
+  'Next 7 days here':'7-da maalmood ee halkan', 'Next 7 days here, by model':'7-da maalmood ee halkan, moodal kasta', 'Today':'Maanta', 'max':'ugu badan',
+  'Rain':'Roob', 'Reference ET':'Uumi-baxa (ET)', 'Rain, other years':'Roob, sannadaha kale', 'Daily rain':'Roobka maalinlaha', 'Daily reference ET':'Uumi-baxa maalinlaha (ET)',
+  'CHIRPS v3':'CHIRPS v3', 'This station':'Saldhiggan', '1991–2020 normal':'Caadiga 1991–2020', '2026 SEAS5':'SEAS5 2026', 'CHIRPS, El Niño year':'CHIRPS, sannad El Niño',
+  'Rain, 2 weeks':'Roob, 2 toddobaad', 'Heat, 7 days':'Kulayl, 7 maalmood', 'Dust, 5 days':'Boodh, 5 maalmood', 'in 3 days':'3 maalmood gudahood', '50 mm':'50 mm',
+  'chance of 10 mm or more':'fursadda 10 mm ama ka badan', '90% or more':'90% ama ka badan', '46 °C or more':'46 °C ama ka badan', '600 or more':'600 ama ka badan',
+  'ECMWF EPSgram style: line min–max, narrow box 10–90%, wide box 25–75%, bar median':'Qaabka EPSgram ee ECMWF: xariiqda ugu yar–ugu badan, sanduuqa cidhiidhiga 10–90%, sanduuqa ballaaran 25–75%, xariiqda dhexdhexaadka',
+  'Flood watch: Juba and Shabelle':'La socodka daadadka: Jubba iyo Shabeelle', '2026 level':'Heerka 2026', 'Long-term mean':'Celceliska muddada dheer',
+  'Moderate risk':'Khatar dhexdhexaad ah', 'High risk':'Khatar sare', 'River flow forecast, next 30 days':'Saadaasha socodka webiyada, 30-ka maalmood ee soo socda',
+  'Past 60 days':'60-kii maalmood ee la soo dhaafay', 'Forecast median':'Dhexdhexaadka saadaasha', 'Middle half of members':'Badhka dhexe ee xubnaha', 'Full range':'Kala fogaanshaha oo dhan',
+  "Model's Nov 2023 flood peak":'Heerka ugu sarreeyay ee daadkii Nofembar 2023 (moodal)',
+  'Well below 2023 flood flow':'Aad uga hooseeya daadkii 2023', 'Rising towards flood flow':'Ku sii kacaya heerka daadka', 'Near 2023 flood flow':'Ku dhow daadkii 2023',
+  'Below flood risk':'Ka hooseeya khatarta daadka', 'Moderate flood risk':'Khatar daad oo dhexdhexaad ah', 'High flood risk':'Khatar daad oo sare', 'No reading':'Akhris ma jiro',
+  'Gauge not reporting this year':'Qalabku xog ma soo dirin sannadkan',
+  'Deyr 2026 outlook':'Saadaasha Deyr 2026', 'Neutral':'Dhexdhexaad', '2026 model scenarios':'Xaaladaha moodalka 2026', 'Ocean drivers, monthly':'Saamaynta badweynta, bil kasta',
+  'Sea state at the ports, next 7 days':'Xaaladda badda ee dekedaha, 7-da maalmood ee soo socda', 'Under 1.25 m':'Ka yar 1.25 m', '1.25–2.5 m, moderate':'1.25–2.5 m, dhexdhexaad',
+  '2.5–4 m, rough for small boats':'2.5–4 m, khatar u ah doonyaha yaryar', '4 m or more':'4 m ama ka badan', 'Swell height':'Dhererka mowjadaha (swell)',
+  'Season ledger':'Diiwaanka xilliyada', 'Twenty years of Gu and Deyr by region':'Labaatan sano oo Gu iyo Deyr ah, gobol gobol', 'Station health':'Xaaladda saldhigyada',
+  'All':'Dhammaan', 'Rain gauges':'Qalabka roobka', 'Weather stations':'Saldhigyada cimilada', 'Raw values':'Xogta ceeriin', 'Sources and method':'Ilaha iyo habka',
+  'How well each source holds up':'Saxnaanta il kasta',
+  'Every dataset on this page, with units, resolution, age and licence. Times are UTC unless marked.':'Xog kasta oo boggan ku jirta: cabbirka, faahfaahinta, da’da iyo shatiga. Waqtiyadu waa UTC.',
+  'Reporting':'Xog soo diraya', 'Rain gauge':'Qalabka roobka', 'Weather station':'Saldhig cimilo',
+  'Deyr 2026, statistical':'Deyr 2026, tirakoob', 'Gu 2026 observed':'Gu 2026, la diiwaangeliyay', 'Rain gauges reporting':'Qalabka roobka ee xog soo diraya',
+  'Rain in the 3 hours to this time':'Roobka 3-dii saacadood ee ka horreeyay waqtigan', 'Rain in the 24 hours from this time':'Roobka 24-ka saacadood ee ka bilaabanaya waqtigan',
+  'Temperature at 2 m':'Heerkulka 2 m', 'Wind speed at 10 m':'Xawaaraha dabaysha 10 m', 'Station dots keep the map layer.':'Dhibcaha saldhigyadu waxay muujinayaan lakabka khariidadda.',
+  'Copy email':'Koobiyee iimaylka', 'Send email':'Dir iimayl', 'Source code':'Koodhka',
+  'Questions, corrections, Somali translation fixes or partnership ideas: write to':'Su’aalo, saxitaan, hagaajinta turjumaadda Soomaaliga ama fikrado iskaashi: noo soo qor',
+  'Cimilada is an unofficial, non-commercial project. Official warnings come from the Somali Disaster Management Agency (SoDMA) and FAO SWALIM.':'Cimilada waa mashruuc aan rasmi ahayn oo aan ganacsi ahayn. Digniinaha rasmiga ah waxaa soo saara Hay’adda Maareynta Musiibooyinka Soomaaliyeed (SoDMA) iyo FAO SWALIM.',
+  'Visits and feature use are counted without cookies or personal data, to see what people use.':'Booqashooyinka iyo isticmaalka waxaa la tiriyaa iyadoo aan la isticmaalin cookies ama xog shakhsi ah.',
+  'Minor':'Yar', 'Moderate':'Dhexdhexaad', 'Severe':'Daran', 'Extreme':'Aad u daran', 'Likely':'La filayo', 'Possible':'Suurtagal', 'Unlikely':'Lama filayo', 'Future':'Soo socota', 'Unknown':'Lama yaqaan',
+  'Green':'Cagaar', 'Yellow':'Jaalle', 'Orange':'Oranji', 'Red':'Casaan', 'No warning':'Digniin ma jirto', 'Be aware':'Ka feejignow', 'Be prepared':'Diyaar garow', 'Take action':'Tallaabo qaad',
+};
+const SO_RX = [
+  [/^(Green|Yellow|Orange|Red) · (No warning|Be aware|Be prepared|Take action)$/, (m,a,b)=>`${SO[a]} · ${SO[b]}`],
+  [/^(Show|Hide) CAP 1\.2 alerts \((\d+)\)$/, (m,a,n)=>`${a==='Show'?'Muuji':'Qari'} digniinaha CAP 1.2 (${n})`],
+  [/^Delayed (\d+) d$/, 'Dib u dhacay $1 maalmood'], [/^Silent (\d+) d$/, 'Aamusan $1 maalmood'],
+  [/^max ([\d.,]+) m$/, 'ugu badnaan $1 m'], [/^Point forecast, (.+)$/, 'Saadaasha goobta, $1'],
+  [/^(Gu|Deyr|Jilaal|Hagaa) rainfall at this site, 1981–2026$/, '$1: roobka goobtan, 1981–2026'],
+  [/^(Gu|Deyr|Jilaal|Hagaa) (\d{4}) accumulation against other years$/, '$1 $2: wadarta roobka iyo sannadaha kale'],
+  [/^Daily, (.+)$/, 'Maalinle, $1'], [/^m³\/s peak · (.+)$/, 'm³/s ugu sarreeya · $1'],
+  [/^(\d+)% of the model's 2023 peak · now ([\d,]+) m³\/s$/, '$1% heerkii daadkii 2023 (moodal) · hadda $2 m³/s'],
+  [/^([−\d.,-]+) m below moderate risk \(([\d.,]+) m\) · long-term mean ([\d.,]+) m$/, '$1 m ka hooseeya khatarta dhexdhexaadka ($2 m) · celceliska $3 m'],
+  [/^([−\d.,-]+) m below moderate risk \(([\d.,]+) m\)$/, '$1 m ka hooseeya khatarta dhexdhexaadka ($2 m)'],
+  [/^Rain (\d{4})$/, 'Roob $1'], [/^El Niño year \(Niño3\.4 ≥ \+0\.5 in Sep–Nov\)$/, 'Sannad El Niño (Niño3.4 ≥ +0.5 Sep–Nof)'], [/^La Niña year \(≤ −0\.5\)$/, 'Sannad La Niña (≤ −0.5)'],
+];
+const MON_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], MON_SO = ['Jan','Feb','Mar','Abr','May','Jun','Lul','Ogs','Seb','Okt','Nof','Dis'];
+const DOW_EN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], DOW_SO = ['Axd','Isn','Tal','Arb','Kha','Jim','Sab'];
+const ORIG = new WeakMap();
+function trText(str){
+  const k = str.trim(); if (!k) return null;
+  if (SO[k]) return str.replace(k, SO[k]);
+  for (const [rx, rp] of SO_RX) if (rx.test(k)) return str.replace(k, k.replace(rx, rp));
+  return null;
+}
+function translateNode(root){
+  if (!root) return;
+  const one = n => {
+    const p = n.parentElement; if (!p || p.closest('script,style,pre,.raw-tbl,#catalog,[lang]:not(html)')) return;
+    if (LANG==='so'){ const tr = trText(ORIG.has(n) ? ORIG.get(n) : n.nodeValue); if (tr!=null){ if (!ORIG.has(n)) ORIG.set(n, n.nodeValue); n.nodeValue = tr; } }
+    else if (ORIG.has(n)){ n.nodeValue = ORIG.get(n); ORIG.delete(n); }
+  };
+  if (root.nodeType===3) return one(root);
+  if (root.nodeType!==1) return;
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let n; (n = w.nextNode()); ) one(n);
+}
+new MutationObserver(recs=>{ if (LANG!=='so') return; for (const r of recs) r.addedNodes.forEach(translateNode); }).observe(document.body, {childList:true, subtree:true});
+function applyLang(l, rerender){
+  LANG = l;
+  try { localStorage.setItem('cimilada-lang', l); } catch(e){}
+  document.documentElement.lang = l;
+  MON.splice(0, 12, ...(l==='so' ? MON_SO : MON_EN));
+  if (typeof DOW!=='undefined') DOW.splice(0, 7, ...(l==='so' ? DOW_SO : DOW_EN));
+  document.querySelectorAll('.seg.lang button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.lang===l));
+  document.getElementById('so-note').hidden = l!=='so';
+  if (rerender){ renderHeader(); renderOutlook(); renderRivers(); renderRiversFc(); renderMarine(); renderTowns(); renderHazards(); renderFilters(); update(); }
+  translateNode(document.body);
+}
+document.querySelectorAll('.seg.lang button').forEach(b=>b.addEventListener('click', ()=>{ if (b.dataset.lang!==LANG){ applyLang(b.dataset.lang, true); track('language', b.dataset.lang); } }));
+
+// ---------- contact ----------
+(function(){
+  let c = null; try { c = JSON.parse(document.getElementById('contact-data').textContent); } catch(e){}
+  if (!c){ document.getElementById('contact').hidden = true; return; }
+  const mail = [...c.u].reverse().join('') + '@' + [...c.d].reverse().join('');
+  document.getElementById('contact-mail').textContent = mail;
+  document.getElementById('contact-send').href = 'mailto:' + mail + '?subject=' + encodeURIComponent('Cimilada');
+  document.getElementById('contact-copy').addEventListener('click', ()=>copyText(mail, document.getElementById('contact-ok')));
+})();
+
 // ---------- usage analytics ----------
 // Counts which features people use, through GoatCounter or Umami when the build configures
 // one (see build.py). No cookies, no personal data, nothing sent when neither is set up.
@@ -2006,7 +2176,7 @@ function track(name, value){
   trackFlush();
 }
 const TRACK_CHANGE = {'o-field':'map-field', 'o-model':'model', 'o-unit':'wind-unit', 'f-layer':'map-layer', 'f-season':'season', 'f-station':'station', 'raw-ds':'raw-dataset'};
-const TRACK_CLICK = {'share-btn':'share-link', 'cap-btn':'cap-alerts', 'cap-copy':'cap-copy', 'raw-copy':'raw-csv', 'probe-csv':'point-csv', 'tl-play':'timeline-play', 'tl-now':'timeline-now', 'probe-close':'point-close'};
+const TRACK_CLICK = {'share-btn':'share-link', 'cap-btn':'cap-alerts', 'cap-copy':'cap-copy', 'raw-copy':'raw-csv', 'probe-csv':'point-csv', 'tl-play':'timeline-play', 'tl-now':'timeline-now', 'probe-close':'point-close', 'contact-copy':'contact-copy', 'contact-send':'contact-email'};
 document.addEventListener('change', e=>{
   const id = e.target.id || '';
   if (TRACK_CHANGE[id]) track(TRACK_CHANGE[id], e.target.value || 'none');
@@ -2027,8 +2197,10 @@ document.addEventListener('click', e=>{
 }, true);
 if (location.hash.length>1) track('shared-link-opened');
 
+applyLang(LANG, false);
 renderHeader(); renderOutlook(); renderFilters(); renderRivers(); renderRiversFc(); renderMarine(); renderTowns(); renderHazards(); renderCatalog(); renderMethod(); update(); applyView();
 if (WX && state.ov.cloud) preloadClouds();
+translateNode(document.body);
 const rethemed = () => { renderMap(); renderWx(); };
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', rethemed);
 new MutationObserver(rethemed).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
