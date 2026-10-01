@@ -47,7 +47,7 @@ jobs:
           SHARE_BASE: ${{ vars.SITE_URL || format('https://{0}.github.io/{1}/', github.repository_owner, github.event.repository.name) }}
           GOATCOUNTER_CODE: ${{ vars.GOATCOUNTER_CODE }}
           UMAMI_WEBSITE_ID: ${{ vars.UMAMI_WEBSITE_ID }}
-          CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL || 'dedirector99@outlook.com' }}
+          CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL || 'hmustafa1@hotmail.com' }}
           PAGES: "1"
         run: |
           python build.py

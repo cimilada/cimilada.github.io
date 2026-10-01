@@ -14,7 +14,7 @@ page stays online.
 
 ## Contact
 
-Questions, corrections and Somali translation fixes: dedirector99@outlook.com
+Questions, corrections and Somali translation fixes: hmustafa1@hotmail.com
 
 ## Pipeline
 
