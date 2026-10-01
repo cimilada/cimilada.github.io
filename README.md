@@ -5,7 +5,7 @@ impact-based colours with CAP 1.2 alerts, forecast maps from NOAA GFS, ECMWF IFS
 ECMWF AIFS, two-week ensemble town forecasts, GloFAS river flow, port wave outlooks,
 SWALIM station water balance and the Deyr seasonal outlook.
 
-**Live:** https://mustafah1.github.io/somalia-weather-dashboard/
+**Live:** https://cimilada.github.io/
 
 The page is a single static HTML file with its data built in. A GitHub Actions workflow
 refetches the forecasts every morning (07:40 Mogadishu time), rebuilds the page and

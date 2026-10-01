@@ -26,7 +26,7 @@ def analytics():
 # Contact address shown on the page. Stored split and reversed, and rebuilt by the page's
 # script, so simple address harvesters do not pick it up from the HTML.
 CONTACT_EMAIL = os.environ.get("CONTACT_EMAIL", "hmustafa1@hotmail.com")
-REPO = os.environ.get("GITHUB_REPOSITORY", "mustafah1/somalia-weather-dashboard")
+REPO = os.environ.get("GITHUB_REPOSITORY", "cimilada/cimilada.github.io")
 
 
 def contact():
