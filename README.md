@@ -39,3 +39,36 @@ the Somali Disaster Management Agency (SoDMA) and FAO SWALIM.
 
 Ideas for the weather layers follow
 [God's Eye View](https://github.com/bilawalsidhu/gods-eye-view) (MIT).
+
+## Visitor and feature analytics
+
+The page can count visits and feature use with [GoatCounter](https://www.goatcounter.com)
+(free for non-commercial sites, no cookies, no personal data) and/or
+[Umami Cloud](https://umami.is) (free up to 100k events a month). Nothing is loaded unless
+configured. Set repository variables under Settings → Secrets and variables → Actions →
+Variables, then re-run the workflow:
+
+| Variable | Example | Effect |
+|---|---|---|
+| `GOATCOUNTER_CODE` | `cimilada` | loads GoatCounter for `https://cimilada.goatcounter.com` |
+| `UMAMI_WEBSITE_ID` | `a1b2c3d4-…` | loads Umami Cloud |
+| `SITE_URL` | `https://cimilada.github.io/` | address used in "Copy link to this view" |
+
+Tracked events (one count per action per 30 s, at most 80 per visit): map layer, field,
+model, unit, season, station, overlays, 2D/3D view, timeline play, point forecast, towns
+and town tabs, hazard cards, CAP alerts, raw data and CSV copies, share links, section
+links and outbound links.
+
+## Custom address
+
+The site is served from GitHub Pages. Free ways to give it a "cimilada" address:
+
+1. **`cimilada.github.io`**: create a free GitHub organization named `cimilada`, transfer
+   this repository to it and rename it `cimilada.github.io`. No DNS needed, HTTPS automatic.
+2. **`cimilada.dpdns.org` / `cimilada.qzz.io`** via [DigitalPlat FreeDomain](https://github.com/DigitalPlatDev/FreeDomain):
+   needs an account with real contact details and an external DNS host (e.g. Cloudflare).
+   Then add GitHub Pages A records (185.199.108–111.153) and set the custom domain in
+   Settings → Pages.
+3. **`cimilada.eu.org`** via [nic.eu.org](https://nic.eu.org): free and permanent, manual
+   approval that can take weeks; needs nameservers first.
+4. **`cimilada.com`** (or `.org`) costs about US$10 a year and is the most dependable.

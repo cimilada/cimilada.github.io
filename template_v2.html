@@ -1,5 +1,6 @@
 <title>Somalia Station Water Balance</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Cpath d=%22M16 3c-5 7-9 11.5-9 16a9 9 0 0 0 18 0c0-4.5-4-9-9-16z%22 fill=%22%232a78d6%22/%3E%3C/svg%3E">
+__ANALYTICS__
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -419,6 +420,7 @@ pre.raw{margin:0;max-height:360px;overflow:auto;font:12px/1.5 var(--mono);color:
 
   <footer>
     <span id="foot"></span>
+    <span id="privacy" hidden>Visits and feature use are counted without cookies or personal data, to see what people use.</span>
     <span>Pipeline: <span class="mono">scrape.py → process.py → fetch_v2.py → process_v2.py → fetch_wx.py → fetch_fc.py → build.py</span>. Boundaries from Natural Earth 1:50m.</span>
   </footer>
 </div>
@@ -1978,6 +1980,53 @@ function update(){
   document.getElementById('f-layer').value = state.layer;
   renderLegend(); renderMap(); renderDetail(); renderLedger(); renderHeat(); renderHealth(); renderWx(); renderRaw();
 }
+// ---------- usage analytics ----------
+// Counts which features people use, through GoatCounter or Umami when the build configures
+// one (see build.py). No cookies, no personal data, nothing sent when neither is set up.
+const ANALYTICS = !!document.querySelector('script[data-goatcounter],script[data-website-id]');
+document.getElementById('privacy').hidden = !ANALYTICS;
+const trackQ = [], trackSeen = {};
+let trackSent = 0;
+function trackFlush(){
+  while (trackQ.length){
+    const [name, value] = trackQ[0];
+    if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({path:`event/${name}${value!=null?'/'+value:''}`, title:`${name}${value!=null?': '+value:''}`, event:true});
+    else if (window.umami && window.umami.track) window.umami.track(name, value!=null ? {value:String(value)} : undefined);
+    else return setTimeout(trackFlush, 1500);   // provider script not loaded yet
+    trackQ.shift();
+  }
+}
+function track(name, value){
+  if (!ANALYTICS) return;
+  const key = name+'|'+value, now = Date.now();
+  if (trackSeen[key] && now-trackSeen[key] < 30000) return;   // one count per action per 30 s
+  if (trackSent >= 80) return;                                 // cap per visit, protects free quotas
+  trackSeen[key] = now; trackSent++;
+  trackQ.push([name, value==null ? null : String(value).slice(0,60).replace(/[^\w.\-]+/g,'-')]);
+  trackFlush();
+}
+const TRACK_CHANGE = {'o-field':'map-field', 'o-model':'model', 'o-unit':'wind-unit', 'f-layer':'map-layer', 'f-season':'season', 'f-station':'station', 'raw-ds':'raw-dataset'};
+const TRACK_CLICK = {'share-btn':'share-link', 'cap-btn':'cap-alerts', 'cap-copy':'cap-copy', 'raw-copy':'raw-csv', 'probe-csv':'point-csv', 'tl-play':'timeline-play', 'tl-now':'timeline-now', 'probe-close':'point-close'};
+document.addEventListener('change', e=>{
+  const id = e.target.id || '';
+  if (TRACK_CHANGE[id]) track(TRACK_CHANGE[id], e.target.value || 'none');
+  else if (id.startsWith('o-') && e.target.type==='checkbox') track('overlay-'+id.slice(2), e.target.checked ? 'on' : 'off');
+}, true);
+document.addEventListener('click', e=>{
+  const t = e.target.closest('button,a,[data-t],.stn,#map svg'); if (!t) return;
+  if (TRACK_CLICK[t.id]) return track(TRACK_CLICK[t.id]);
+  if (t.dataset.view) return track('view', t.dataset.view);
+  if (t.dataset.tv) return track('town-tab', t.dataset.tv);
+  if (t.dataset.net) return track('station-network', t.dataset.net);
+  if (t.closest('.hz')) return track('hazard-card', (t.querySelector('.t')||t).firstChild.textContent.trim());
+  if (t.closest('.nav')) return track('nav', t.getAttribute('href').slice(1));
+  if (t.closest('#towns-tbl') && t.dataset.t) return track('town', (FC && FC.towns[+t.dataset.t]||{}).name);
+  if (t.classList.contains('stn')) return track('station-map', t.dataset.code);
+  if (t.matches('#map svg')) return track('point-forecast');
+  if (t.tagName==='A' && /^https?:/.test(t.href) && !t.href.startsWith(location.origin)) return track('outbound', t.hostname);
+}, true);
+if (location.hash.length>1) track('shared-link-opened');
+
 renderHeader(); renderOutlook(); renderFilters(); renderRivers(); renderRiversFc(); renderMarine(); renderTowns(); renderHazards(); renderCatalog(); renderMethod(); update(); applyView();
 if (WX && state.ov.cloud) preloadClouds();
 const rethemed = () => { renderMap(); renderWx(); };
