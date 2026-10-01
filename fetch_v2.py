@@ -11,6 +11,7 @@ import datetime as dt
 import json
 import sys
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -19,15 +20,28 @@ UA = {"User-Agent": "swalim-water-balance/2 (research dashboard)"}
 
 
 def get(url, data=None, tries=4, timeout=180):
-    for i in range(tries):
+    """GET/POST with retries. Open-Meteo answers 429 when its per-minute or hourly quota
+    is used up (shared CI runners hit this), so a 429 waits a full minute and does not
+    use up one of the ordinary retries."""
+    i = waits = 0
+    while True:
         try:
             req = urllib.request.Request(url, data=data, headers=UA)
             return urllib.request.urlopen(req, timeout=timeout).read()
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and waits < 8:
+                waits += 1
+                print(f"429 rate limited, waiting 60 s ({waits}/8)", url[:70], file=sys.stderr, flush=True)
+                time.sleep(60)
+                continue
+            err = e
         except Exception as e:
-            if i == tries - 1:
-                print("FAIL", url[:120], e, file=sys.stderr)
-                return None
-            time.sleep(8 * (i + 1))
+            err = e
+        i += 1
+        if i >= tries:
+            print("FAIL", url[:120], err, file=sys.stderr, flush=True)
+            return None
+        time.sleep(8 * i)
 
 
 def fix_coords(s):
