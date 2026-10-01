@@ -1,0 +1,4 @@
+# forecast refresh and page build (what CI runs)
+numpy>=1.26
+pillow>=10.0
+# station pipeline, run locally: process_v2.py also needs matplotlib, fetch_v2.py gefs needs rasterio

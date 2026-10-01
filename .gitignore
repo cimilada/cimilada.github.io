@@ -1,0 +1,27 @@
+# built outputs (CI rebuilds and deploys them)
+dashboard.html
+dashboard_v1.html
+wx.json
+fc.json
+_site/
+
+# large raw inputs and caches for the station pipeline (kept locally)
+data/raw.json
+data/mrs_raw.json
+data/ss_raw.json
+data/power.json
+data/ibtracs_ni.csv
+data/chirps_som.npz
+data/wx/elev.npz
+
+# fast-moving forecast stages, refetched on every run
+data/wx/wind.json
+data/wx/clouds.json
+data/wx/active.json
+data/fc/towns.json
+data/fc/rivers.json
+data/fc/marine.json
+
+research/*.html
+__pycache__/
+.DS_Store

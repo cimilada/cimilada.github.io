@@ -1,0 +1,587 @@
+<title>Somalia Station Water Balance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f1f4f3; --surface:#fcfcfb; --ink:#121a19; --ink2:#4b5654; --muted:#7f8886;
+  --grid:#e2e6e4; --axis:#c3cac7; --line:rgba(18,26,25,.10);
+  --land:#e6e1d3; --land-n:#e9ecea; --land-edge:#cfd4d1;
+  --rain:#2a78d6; --eto:#eb6834; --prior:#b8c0bd;
+  --c0:#86b6ef; --c1:#3987e5; --c2:#256abf; --c3:#184f95; --c4:#0d366b;
+  --t0:#0b1f3a; --t1:#ffffff; --t2:#ffffff; --t3:#ffffff; --t4:#ffffff;
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b; --good-ink:#006300; --warn-ink:#8a5a00; --crit-ink:#b02a2a;
+  --focus:#2a78d6;
+  --sans:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --cond:"Barlow Condensed","Barlow",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0e1312; --surface:#161c1b; --ink:#f1f5f4; --ink2:#bdc7c4; --muted:#8a9491;
+    --grid:#253029; --axis:#3a4642; --line:rgba(255,255,255,.10);
+    --land:#2b2a24; --land-n:#1b211f; --land-edge:#323a37;
+    --rain:#3987e5; --eto:#d95926; --prior:#48534f;
+    --c0:#184f95; --c1:#256abf; --c2:#3987e5; --c3:#6da7ec; --c4:#b7d3f6;
+    --t0:#ffffff; --t1:#ffffff; --t2:#ffffff; --t3:#0b1f3a; --t4:#0b1f3a;
+    --good-ink:#34c234; --warn-ink:#fab219; --crit-ink:#ef6a6a; --focus:#6da7ec;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0e1312; --surface:#161c1b; --ink:#f1f5f4; --ink2:#bdc7c4; --muted:#8a9491;
+  --grid:#253029; --axis:#3a4642; --line:rgba(255,255,255,.10);
+  --land:#2b2a24; --land-n:#1b211f; --land-edge:#323a37;
+  --rain:#3987e5; --eto:#d95926; --prior:#48534f;
+  --c0:#184f95; --c1:#256abf; --c2:#3987e5; --c3:#6da7ec; --c4:#b7d3f6;
+  --t0:#ffffff; --t1:#ffffff; --t2:#ffffff; --t3:#0b1f3a; --t4:#0b1f3a;
+  --good-ink:#34c234; --warn-ink:#fab219; --crit-ink:#ef6a6a; --focus:#6da7ec;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;gap:28px}
+h1,h2,h3{font-family:var(--cond);font-weight:600;letter-spacing:.01em;text-wrap:balance;margin:0;line-height:1.1}
+h1{font-size:clamp(30px,4.4vw,44px)}
+h2{font-size:24px}
+h3{font-size:18px}
+p{margin:0}
+.eyebrow{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.mono{font-family:var(--mono);font-size:.86em}
+.muted{color:var(--muted)}
+.ink2{color:var(--ink2)}
+a{color:var(--rain)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+header.top{display:grid;gap:10px}
+header.top .lede{max-width:78ch;font-size:17px;color:var(--ink2)}
+header.top .lede b{color:var(--ink);font-weight:600}
+
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.kpi{background:var(--surface);padding:16px 18px;display:grid;gap:4px;align-content:start}
+.kpi .v{font-family:var(--cond);font-size:38px;font-weight:600;line-height:1}
+.kpi .v small{font-size:20px;color:var(--muted);font-weight:500}
+.kpi .d{font-size:13px;color:var(--ink2)}
+@media (max-width:820px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.filters{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:end;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:10px;border-bottom:1px solid var(--line)}
+.filters label{display:grid;gap:3px;font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+select{font:500 15px var(--sans);color:var(--ink);background:var(--surface);border:1px solid var(--axis);border-radius:6px;padding:6px 30px 6px 10px;min-width:0;max-width:100%}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--ink2);align-items:center}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+.sw.hollow{background:transparent;border:1.5px solid var(--muted)}
+.ln{display:inline-block;width:16px;height:2px;vertical-align:4px;margin-right:5px;border-radius:1px}
+
+.main{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:24px;align-items:start}
+@media (max-width:960px){.main{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;gap:14px;min-width:0}
+.panel-h{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 16px;align-items:baseline}
+
+#map svg{width:100%;height:auto;display:block}
+#map .stn{cursor:pointer}
+#map .stn text{font:500 11px var(--sans);fill:var(--ink2);paint-order:stroke;stroke:var(--land);stroke-width:3px}
+
+.st-head{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:2px 9px 2px 7px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
+.pill i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.pill.good{color:var(--good-ink)} .pill.good i{background:var(--good)}
+.pill.warn{color:var(--warn-ink)} .pill.warn i{background:var(--warn)}
+.pill.crit{color:var(--crit-ink)} .pill.crit i{background:var(--crit)}
+.facts{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13px;color:var(--ink2)}
+.facts b{color:var(--ink);font-weight:600}
+.chart{position:relative}
+.chart svg{width:100%;height:auto;display:block;overflow:visible}
+.chart text{font:12px var(--sans);fill:var(--muted);font-variant-numeric:tabular-nums}
+.note{font-size:13px;color:var(--ink2);padding:8px 12px;border-left:3px solid var(--warn);background:color-mix(in srgb,var(--warn) 8%,transparent);border-radius:0 6px 6px 0}
+
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:6px 10px;border-bottom:1px solid var(--axis);white-space:nowrap}
+td{padding:6px 10px;border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.num,th.num{text-align:right}
+tr.sel td{background:color-mix(in srgb,var(--rain) 8%,transparent)}
+.flag{color:var(--crit-ink);font-weight:600}
+.chip{display:inline-block;min-width:74px;text-align:center;font-size:12px;font-weight:600;padding:1px 6px;border-radius:4px}
+
+.heat{border-collapse:separate;border-spacing:2px;width:auto}
+.heat th{border:0;padding:2px 4px;text-align:center;font-size:11px}
+.heat th.col{cursor:pointer;border-radius:4px}
+.heat th.col.on{background:var(--ink);color:var(--surface)}
+.heat th.row{text-align:right;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink2);font-weight:500;padding-right:8px}
+.heat th.row.on{color:var(--ink);font-weight:600}
+.heat td{padding:0;border:0}
+.heat .cell{width:54px;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;cursor:pointer;position:relative}
+.heat .cell.na{background:repeating-linear-gradient(135deg,transparent 0 4px,var(--grid) 4px 5px);color:var(--muted);font-weight:400}
+.heat .cell.zero::after{content:"!";position:absolute;top:-5px;right:-3px;width:14px;height:14px;border-radius:50%;background:var(--crit);color:#fff;font-size:10px;line-height:14px;text-align:center}
+.heat .cell.cur{outline:2px solid var(--ink);outline-offset:1px}
+.heat .cell.part{opacity:.55}
+
+.bar{display:inline-block;width:70px;height:6px;background:var(--grid);border-radius:3px;vertical-align:middle;margin-right:6px;overflow:hidden}
+.bar b{display:block;height:100%;background:var(--rain);border-radius:3px}
+
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+@media (max-width:820px){.two{grid-template-columns:minmax(0,1fr)}}
+.prose{display:grid;gap:10px;max-width:70ch;font-size:14.5px;color:var(--ink2)}
+.prose b{color:var(--ink)}
+.prose ul{margin:0;padding-left:18px;display:grid;gap:6px}
+.repo{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:14px}
+.repo .s{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:right;padding-top:2px}
+
+#tip{position:fixed;pointer-events:none;z-index:50;background:var(--ink);color:var(--surface);font-size:12.5px;line-height:1.45;padding:7px 10px;border-radius:6px;max-width:260px;opacity:0;transition:opacity .08s;font-variant-numeric:tabular-nums}
+#tip b{font-weight:600}
+#tip .k{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:0}
+footer{font-size:12.5px;color:var(--muted);display:grid;gap:4px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">SWALIM ClimSeries · Automatic Weather Stations · proof of concept</div>
+    <h1>Somalia Station Water Balance</h1>
+    <p class="lede" id="lede"></p>
+  </header>
+
+  <section class="kpis" id="kpis" aria-label="Network summary"></section>
+
+  <div class="filters" role="group" aria-label="Filters">
+    <label for="f-season">Season<select id="f-season"></select></label>
+    <label for="f-station">Station<select id="f-station"></select></label>
+    <div class="legend" id="cls-legend" aria-label="Seasonal P/ETo classes"></div>
+  </div>
+
+  <section class="main">
+    <div class="panel" id="map-panel">
+      <div class="panel-h"><h2 id="map-title">Seasonal moisture</h2><span class="muted" style="font-size:13px">rain ÷ reference ET</span></div>
+      <div id="map"></div>
+      <p class="muted" style="font-size:12.5px">Dot colour is the season's rainfall divided by its FAO-56 reference evapotranspiration. A hollow ring means the station recorded less than 80% of that season. Click a station for detail.</p>
+    </div>
+
+    <div class="panel" id="detail">
+      <div class="panel-h">
+        <div style="display:grid;gap:4px">
+          <div class="st-head"><h2 id="st-name"></h2><span id="st-pill"></span></div>
+          <div class="facts" id="st-facts"></div>
+        </div>
+      </div>
+      <div id="st-note"></div>
+      <div style="display:grid;gap:6px">
+        <div class="panel-h"><h3 id="cum-title"></h3>
+          <div class="legend"><span><i class="ln" style="background:var(--rain)"></i><span id="lg-sel">Rain</span></span><span><i class="ln" style="background:var(--eto)"></i>Reference ET</span><span><i class="ln" style="background:var(--prior)"></i>Rain, other years</span></div>
+        </div>
+        <div class="chart" id="cum"></div>
+      </div>
+      <div style="display:grid;gap:6px">
+        <div class="panel-h"><h3 id="daily-title">Last 120 days of record</h3>
+          <div class="legend"><span><i class="sw" style="background:var(--rain)"></i>Daily rain</span><span><i class="ln" style="background:var(--eto)"></i>Daily reference ET</span></div>
+        </div>
+        <div class="chart" id="daily"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h"><h2>Season ledger</h2><span class="muted" style="font-size:13px" id="ledger-sub"></span></div>
+    <div class="tbl-wrap"><table id="ledger"></table></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h"><h2>Gu and Deyr across the network</h2><span class="muted" style="font-size:13px">cell = season rainfall (mm), colour = P/ETo class · north at top</span></div>
+    <div class="tbl-wrap"><table class="heat" id="heat"></table></div>
+    <div class="legend"><span><i class="sw" style="background:repeating-linear-gradient(135deg,transparent 0 3px,var(--axis) 3px 4px)"></i>No record / under 50% of days</span><span><i class="sw" style="background:var(--c1);opacity:.55"></i>50–80% of days recorded</span><span><i class="sw" style="background:var(--crit);border-radius:50%"></i>0 mm while network median ≥ 40 mm: check the gauge</span></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h"><h2>Station health</h2><span class="muted" style="font-size:13px" id="health-sub"></span></div>
+    <div class="tbl-wrap"><table id="health"></table></div>
+  </section>
+
+  <section class="two">
+    <div class="panel prose">
+      <h2>Method</h2>
+      <ul>
+        <li><b>Source.</b> Daily series embedded in each station page on <a href="https://climseries.faoswalim.org/station/map/aws/" target="_blank" rel="noopener">climseries.faoswalim.org</a>: rain, temperature, humidity, pressure, solar radiation and wind. Aburin publishes hourly data from 2009; it is aggregated to days with at least 22 hourly rain readings.</li>
+        <li><b>Quality control.</b> Rain outside 0–250 mm/day, temperature more than 8 °C from its 31-day median, humidity outside 3–100%, pressure more than 12 hPa from the station median, daily-mean radiation above 400 W/m² or below 20% of the clear-sky value, are rejected. Example rejects: 78,581 mm in a day at Bosaso, −20 °C at Qardho.</li>
+        <li><b>Reference ET.</b> FAO-56 Penman-Monteith (Allen et al. 1998, eq. 6) on daily means. Elevation is inferred from station pressure because most station records list none. Wind is read as km/h at 2 m. Missing radiation is filled from the station's own monthly median and counted in the health table. Results match <span class="mono">pyet.pm_fao56</span> within 0.03 mm/day.</li>
+        <li><b>Seasons.</b> Jilaal Jan–Mar, Gu Apr–Jun, Hagaa Jul–Sep, Deyr Oct–Dec. Onset is the first day from 1 Mar (Gu) or 15 Sep (Deyr) with ≥ 20 mm over 3 days and no 10-day dry spell in the following 30 days. Classes use the UNEP aridity bounds 0.05, 0.20, 0.50 and 0.65 applied to the season.</li>
+        <li><b>Limits.</b> Records are 2–5 years long, too short for a climatology, SPI or SPEI. Tmax and Tmin are not published, so saturation vapour pressure uses the daily mean, which slightly understates ET.</li>
+      </ul>
+    </div>
+    <div class="panel prose">
+      <h2>What exists on GitHub</h2>
+      <p>Searches for <span class="mono">faoswalim</span>, <span class="mono">climseries</span> and <span class="mono">SWALIM</span> return no code that uses these stations. The nearest work uses gridded rainfall only, and the general tools are unaware of Somali seasons:</p>
+      <div class="repo">
+        <span class="s">414★</span><span><a href="https://github.com/monocongo/climate_indices" target="_blank" rel="noopener">monocongo/climate_indices</a>: SPI and SPEI. Needs about 30 years of data.</span>
+        <span class="s">405★</span><span><a href="https://github.com/Ouranosinc/xclim" target="_blank" rel="noopener">Ouranosinc/xclim</a>: climate indicators on xarray, including dry spells.</span>
+        <span class="s">180★</span><span><a href="https://github.com/woodcrafty/PyETo" target="_blank" rel="noopener">woodcrafty/PyETo</a>: FAO-56 building blocks.</span>
+        <span class="s">165★</span><span><a href="https://github.com/pyet-org/pyet" target="_blank" rel="noopener">pyet-org/pyet</a>: reference evaporation. This page's ETo matches its FAO-56 result within 0.03 mm/day at every station.</span>
+        <span class="s">2★</span><span><a href="https://github.com/mbsaid/eds_capstone_project" target="_blank" rel="noopener">mbsaid/eds_capstone_project</a>: CHIRPS rainfall versus livestock in Somalia.</span>
+      </div>
+      <p><b>Why this project.</b> Gridded products such as CHIRPS estimate rain. Only ground stations measure the radiation, wind and humidity that set crop and pasture water demand. This page combines both sides of the balance. It also shows which stations need a technician before Deyr.</p>
+      <p><b>Next steps.</b> Run the scraper nightly. Blend CHIRPS to fill outages and give anomalies a 30-year base, which also makes SPEI possible. Alert SWALIM when a station goes silent or a gauge reads zero through rain elsewhere. Publish the cleaned daily set as open CSV.</p>
+    </div>
+  </section>
+
+  <footer>
+    <span id="foot"></span>
+    <span>Pipeline: <span class="mono">scrape.py → process.py → build.py</span>. Station coordinates and status as listed by SWALIM; boundaries from Natural Earth 1:50m.</span>
+  </footer>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+(function(){
+const D = JSON.parse(document.getElementById('data').textContent);
+const S = D.stations;
+const byCode = Object.fromEntries(S.map(s=>[s.code,s]));
+const ASOF = D.asof;
+const MS = 864e5;
+const dnum = iso => Date.UTC(+iso.slice(0,4), +iso.slice(5,7)-1, +iso.slice(8,10))/MS;
+const diso = n => new Date(n*MS).toISOString().slice(0,10);
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fmtD = iso => { const d=new Date(iso+'T00:00:00Z'); return d.getUTCDate()+' '+MON[d.getUTCMonth()]+' '+d.getUTCFullYear(); };
+const fmtDs = iso => { const d=new Date(iso+'T00:00:00Z'); return d.getUTCDate()+' '+MON[d.getUTCMonth()]; };
+const SEAS = {Jilaal:[1,3],Gu:[4,6],Hagaa:[7,9],Deyr:[10,12]};
+const CLS = ['Hyper-arid','Arid','Semi-arid','Dry sub-humid','Humid'];
+const BOUNDS = [0.05,0.2,0.5,0.65];
+const cls = r => r==null ? -1 : BOUNDS.filter(b=>r>=b).length;
+const fmt = (v,d=0) => v==null ? '–' : v.toLocaleString('en-US',{maximumFractionDigits:d,minimumFractionDigits:d});
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const seasonRow = (s,y,name) => s.seasons.find(r=>r.y===y && r.s===name);
+const status = s => s.lag<=2 ? ['good','Reporting'] : s.lag<=30 ? ['warn',`Delayed ${s.lag} d`] : ['crit',`Silent ${s.lag} d`];
+const totalP = s => s.P.reduce((a,v)=>a+(v||0),0);
+const gaugeDead = s => s.P.filter(v=>v!=null).length>365 && totalP(s)===0;
+
+// ---------- state ----------
+const cols = [];
+for (let y=2021; y<=+ASOF.slice(0,4); y++) for (const n of ['Gu','Deyr']) {
+  const start = `${y}-${String(SEAS[n][0]).padStart(2,'0')}-01`;
+  if (start <= ASOF) cols.push({y, s:n});
+}
+const latestComplete = [...cols].reverse().find(c=>{
+  const n = S.filter(s=>{const r=seasonRow(s,c.y,c.s); return r && r.cov>=0.8 && !r.prog;}).length;
+  return n>=8;
+});
+const state = {season: latestComplete, code: 'AWS_MOGADISHU'};
+try { const v = JSON.parse(localStorage.getItem('swb-state')||'null'); if (v && byCode[v.code]) state.code=v.code; if (v && v.season && cols.some(c=>c.y===v.season.y&&c.s===v.season.s)) state.season=v.season; } catch(e){}
+const save = () => { try { localStorage.setItem('swb-state', JSON.stringify(state)); } catch(e){} };
+
+// ---------- tooltip ----------
+const tip = document.getElementById('tip');
+function showTip(html, ev){
+  tip.innerHTML = html; tip.style.opacity = 1;
+  const r = tip.getBoundingClientRect();
+  let x = ev.clientX + 14, y = ev.clientY + 14;
+  if (x + r.width > innerWidth - 8) x = ev.clientX - r.width - 14;
+  if (y + r.height > innerHeight - 8) y = ev.clientY - r.height - 14;
+  tip.style.left = Math.max(8,x)+'px'; tip.style.top = Math.max(8,y)+'px';
+}
+const hideTip = () => { tip.style.opacity = 0; };
+
+// ---------- header, KPIs ----------
+function renderHeader(){
+  const live = S.filter(s=>s.lag<=2);
+  const r26 = S.filter(s=>{const r=seasonRow(s,2026,'Gu'); return r && r.cov>=0.8;}).length;
+  // stations with data in Feb 2026 that then had nothing in Apr–Jul 2026
+  const active26 = S.filter(s=>s.last>='2026-02-01');
+  const dark = active26.filter(s=>{
+    const i0=dnum('2026-04-01')-dnum(s.first), i1=dnum('2026-07-31')-dnum(s.first);
+    return s.P.slice(Math.max(0,i0), i1+1).filter(v=>v!=null).length < 10;
+  });
+  const d25 = S.map(s=>seasonRow(s,2025,'Deyr')).filter(r=>r && r.cov>=0.8 && r.ratio!=null && !r.zero);
+  const med = a => { const b=[...a].sort((x,y)=>x-y); const m=b.length>>1; return b.length%2?b[m]:(b[m-1]+b[m])/2; };
+  const d25P = med(d25.map(r=>r.P)), d25E = med(d25.map(r=>r.E)), d25R = med(d25.map(r=>r.ratio));
+  const priorDeyr = S.map(s=>seasonRow(s,2023,'Deyr')).filter(r=>r && r.cov>=0.8 && !r.zero);
+  const d23P = med(priorDeyr.map(r=>r.P));
+  const misl = S.filter(s=>s.status==='Functioning' && s.lag>30);
+  const sus = S.filter(s=>gaugeDead(s) || s.seasons.some(r=>r.zero));
+  const daysToDeyr = dnum(ASOF.slice(0,4)+'-10-01') - dnum(ASOF);
+
+  document.getElementById('lede').innerHTML =
+    `<b>Deyr 2025 failed across the network.</b> The median station recorded ${fmt(d25P)} mm of rain against ${fmt(d25E)} mm of reference evapotranspiration. In Deyr 2023 the median was ${fmt(d23P)} mm. ` +
+    `<b>Gu 2026 went almost unrecorded.</b> ${dark.length} of ${active26.length} stations active in early 2026 sent nothing between April and July. ` +
+    (daysToDeyr>0 ? `Deyr 2026 starts in ${daysToDeyr} days, and ${live.length} of ${S.length} stations are reporting.` : `${live.length} of ${S.length} stations are reporting.`);
+
+  const k = [
+    [`${live.length}<small> / ${S.length}</small>`, 'Stations reporting', `Data within 2 days of ${fmtD(ASOF)}`],
+    [`${r26}<small> / ${S.length}</small>`, 'Gu 2026 recorded', `Stations with 80% or more of Apr–Jun days`],
+    [`${fmt(d25R,2)}`, 'Deyr 2025 median P/ETo', `${CLS[cls(d25R)]}. Rain covered ${fmt(d25R*100)}% of water demand`],
+    [`${misl.length + sus.length}`, 'Stations needing a visit', `${misl.length} listed “Functioning” but silent; ${sus.length} with suspect zero-rain seasons`],
+  ];
+  document.getElementById('kpis').innerHTML = k.map(([v,l,d])=>`<div class="kpi"><span class="eyebrow">${l}</span><span class="v">${v}</span><span class="d">${d}</span></div>`).join('');
+  document.getElementById('foot').textContent = `Data as of ${fmtD(ASOF)}. Scraped from SWALIM ClimSeries; ${S.length} stations.`;
+}
+
+// ---------- filters ----------
+function renderFilters(){
+  const fs = document.getElementById('f-season');
+  fs.innerHTML = [...cols].reverse().map(c=>`<option value="${c.s}|${c.y}">${c.s} ${c.y}</option>`).join('');
+  fs.value = `${state.season.s}|${state.season.y}`;
+  fs.onchange = () => { const [s,y]=fs.value.split('|'); state.season={s, y:+y}; save(); update(); };
+  const ft = document.getElementById('f-station');
+  ft.innerHTML = [...S].sort((a,b)=>a.name.localeCompare(b.name)).map(s=>`<option value="${s.code}">${esc(s.name)}</option>`).join('');
+  ft.value = state.code;
+  ft.onchange = () => { state.code = ft.value; save(); update(); };
+  document.getElementById('cls-legend').innerHTML = CLS.map((c,i)=>{
+    const lo = i? BOUNDS[i-1] : 0, hi = BOUNDS[i];
+    return `<span><i class="sw" style="background:var(--c${i})"></i>${c} <span class="muted">${hi!=null?`&lt; ${hi}`:`≥ ${lo}`}</span></span>`;
+  }).join('') + `<span><i class="sw hollow"></i>No season record</span>`;
+}
+
+// ---------- map ----------
+const LON0=40.4, LON1=51.8, LAT0=-2.0, LAT1=12.4, MW=460;
+const MH = Math.round(MW*(LAT1-LAT0)/(LON1-LON0));
+const px = lon => (lon-LON0)/(LON1-LON0)*MW, py = lat => (LAT1-lat)/(LAT1-LAT0)*MH;
+function renderMap(){
+  const path = poly => 'M'+poly.map(([x,y])=>`${px(x).toFixed(1)},${py(y).toFixed(1)}`).join('L')+'Z';
+  const nb = ['ETH','KEN','DJI'].flatMap(k=>(D.shapes[k]||[]).map(p=>`<path d="${path(p)}" fill="var(--land-n)" stroke="var(--land-edge)" stroke-width="1"/>`)).join('');
+  const so = ['SOM','SOL'].flatMap(k=>(D.shapes[k]||[]).map(p=>`<path d="${path(p)}" fill="var(--land)" stroke="var(--land)" stroke-width="1.2"/>`)).join('');
+  const {y,s:sn} = state.season;
+  const LBL_LEFT = new Set(['AWS_BOORAMA','AWS_WGABU','AWS_DOLOOW','AWS_KISMAYO','AWS_QARDHO','AWS_BADHAN','AWS_GALKACYO','AWS_HUDUR','AWS_GURICEEL']);
+  const dots = [...S].sort((a,b)=>(a.code===state.code)-(b.code===state.code)).map(st=>{
+    const r = seasonRow(st,y,sn);
+    const ok = r && r.cov>=0.8 && r.ratio!=null;
+    const c = ok ? cls(r.ratio) : -1;
+    const x = px(st.lon), yy = py(st.lat), sel = st.code===state.code;
+    const left = LBL_LEFT.has(st.code);
+    return `<g class="stn" data-code="${st.code}" tabindex="0" role="button" aria-label="${esc(st.name)}">
+      <circle cx="${x}" cy="${yy}" r="14" fill="transparent"/>
+      ${sel?`<circle cx="${x}" cy="${yy}" r="11" fill="none" stroke="var(--ink)" stroke-width="2"/>`:''}
+      <circle cx="${x}" cy="${yy}" r="7" fill="${c>=0?`var(--c${c})`:'var(--land)'}" stroke="${c>=0?'var(--land)':'var(--muted)'}" stroke-width="${c>=0?2:1.5}"/>
+      ${r && r.zero ? `<circle cx="${x+6}" cy="${yy-6}" r="3.5" fill="var(--crit)"/>`:''}
+      <text x="${left?x-12:x+12}" y="${yy+4}" text-anchor="${left?'end':'start'}" style="${sel?'fill:var(--ink);font-weight:600':''}">${esc(st.name)}</text>
+    </g>`;
+  }).join('');
+  const m = document.getElementById('map');
+  m.innerHTML = `<svg viewBox="0 0 ${MW} ${MH}" role="img" aria-label="Map of stations coloured by ${sn} ${y} P/ETo">${nb}${so}
+    <text x="${px(42.6)}" y="${py(-1.2)}" style="font:600 11px var(--sans);fill:var(--muted);letter-spacing:.1em">INDIAN OCEAN</text>
+    <text x="${px(46.3)}" y="${py(12.0)}" style="font:600 11px var(--sans);fill:var(--muted);letter-spacing:.1em">GULF OF ADEN</text>
+    ${dots}</svg>`;
+  document.getElementById('map-title').textContent = `${sn} ${y} seasonal moisture`;
+  m.querySelectorAll('.stn').forEach(g=>{
+    const st = byCode[g.dataset.code];
+    const r = seasonRow(st,y,sn);
+    const html = `<b>${esc(st.name)}</b><br>` + (r && r.cov>=0.5
+      ? `${sn} ${y}: <b>${fmt(r.P)} mm</b> rain, ${fmt(r.E)} mm ETo<br>P/ETo ${fmt(r.ratio,2)} · ${r.ratio!=null?CLS[cls(r.ratio)]:''}${r.cov<0.8?`<br>Only ${fmt(r.cov*100)}% of days recorded`:''}${r.zero?'<br>0 mm while the network had rain':''}`
+      : `No ${sn} ${y} record`) + `<br>${status(st)[1]}`;
+    g.addEventListener('mousemove', e=>showTip(html,e));
+    g.addEventListener('mouseleave', hideTip);
+    g.addEventListener('focus', e=>{ const b=g.getBoundingClientRect(); showTip(html,{clientX:b.right,clientY:b.top}); });
+    g.addEventListener('blur', hideTip);
+    const pick = () => { state.code = st.code; save(); update(); };
+    g.addEventListener('click', pick);
+    g.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); pick(); }});
+  });
+}
+
+// ---------- detail ----------
+function seasonSeries(st, y, sn){
+  const [m0,m1] = SEAS[sn];
+  const a = dnum(`${y}-${String(m0).padStart(2,'0')}-01`);
+  const b = dnum(`${y+(m1===12)}-${String(m1===12?1:m1+1).padStart(2,'0')}-01`) - 1;
+  const f = dnum(st.first);
+  const P=[], E=[]; let cp=0, ce=0, nP=0, nE=0;
+  for (let d=a; d<=b; d++){
+    const i = d-f, p = st.P[i], e = st.E[i];
+    if (i<0 || i>=st.P.length || d>dnum(ASOF)) { P.push(null); E.push(null); continue; }
+    if (p!=null){ cp+=p; nP++; } if (e!=null){ ce+=e; nE++; }
+    P.push(p!=null?cp:null); E.push(e!=null?ce:null);
+  }
+  return {P, E, a, n:b-a+1, covP:nP/(b-a+1), nP, nE};
+}
+
+function renderDetail(){
+  const st = byCode[state.code];
+  const {y, s:sn} = state.season;
+  document.getElementById('st-name').textContent = st.name;
+  const [k,l] = status(st);
+  document.getElementById('st-pill').innerHTML = `<span class="pill ${k}"><i></i>${l}</span>`;
+  document.getElementById('st-facts').innerHTML =
+    `<span class="mono">${st.code}</span>${[st.district,st.region,st.state].filter(Boolean).length?`<span>${[st.district,st.region,st.state].filter(Boolean).map(esc).join(', ')}</span>`:''}<span>≈ <b>${fmt(st.elev)} m</b> from pressure</span><span>Record <b>${fmtD(st.first)}</b> – <b>${fmtD(st.last)}</b></span>`;
+  const notes = [];
+  if (gaugeDead(st)) notes.push(`The rain gauge has reported 0.0 mm on all ${st.P.filter(v=>v!=null).length} days since ${fmtD(st.first)}, including wet seasons at neighbouring stations. It is almost certainly blocked or disconnected.`);
+  else if (st.seasons.some(r=>r.zero)) notes.push(`0 mm recorded in ${st.seasons.filter(r=>r.zero).map(r=>`${r.s} ${r.y}`).join(', ')} while the network median was ≥ 40 mm. Check the gauge.`);
+  if (st.status==='Functioning' && st.lag>30) notes.push(`SWALIM lists this station as Functioning, but it has sent no data for ${st.lag} days.`);
+  if (st.qc.Rs[1]===0) notes.push('This station publishes no solar radiation, so reference ET cannot be computed.');
+  document.getElementById('st-note').innerHTML = notes.map(n=>`<p class="note">${n}</p>`).join('');
+  renderCum(st, y, sn);
+  renderDaily(st);
+}
+
+function axisTicks(max){
+  const step = [1,2,5,10,20,25,50,100,200,250,500,1000].find(s=>max/s<=5) || 1000;
+  const t=[]; for (let v=0; v<=max+1e-9; v+=step) t.push(v); return t;
+}
+
+function renderCum(st, y, sn){
+  const el = document.getElementById('cum');
+  const years = [...new Set(st.seasons.filter(r=>r.s===sn).map(r=>r.y))];
+  const series = years.map(yy=>({y:yy, ...seasonSeries(st,yy,sn)})).filter(s=>s.covP>=0.5 || s.y===y);
+  const cur = series.find(s=>s.y===y);
+  document.getElementById('cum-title').textContent = `${sn} rainfall accumulation, ${y} against other years`;
+  document.getElementById('lg-sel').textContent = `Rain ${y}`;
+  const W=640, H=270, L=44, R=56, T=22, B=26, pw=W-L-R, ph=H-T-B;
+  const n = (cur||series[0]||{n:91}).n;
+  let max = 10;
+  series.forEach(s=>{ s.P.forEach(v=>{ if(v!=null) max=Math.max(max,v); }); });
+  if (cur) cur.E.forEach(v=>{ if(v!=null) max=Math.max(max,v); });
+  const ticks = axisTicks(max*1.05); max = ticks[ticks.length-1] || max;
+  const X = i => L + i/(n-1)*pw, Y = v => T + ph - v/max*ph;
+  const line = arr => { let d='', pen=false; arr.forEach((v,i)=>{ if(v==null){pen=false;return;} d+=(pen?'L':'M')+X(i).toFixed(1)+','+Y(v).toFixed(1); pen=true; }); return d; };
+  const lastPt = arr => { for(let i=arr.length-1;i>=0;i--) if(arr[i]!=null) return [i,arr[i]]; return null; };
+  const [m0] = SEAS[sn];
+  const mt = [0,1,2].map(k=>{ const d=dnum(`${y}-${String(m0+k).padStart(2,'0')}-01`)-dnum(`${y}-${String(m0).padStart(2,'0')}-01`); return [d, MON[m0-1+k]]; });
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Cumulative ${sn} rainfall by year at ${esc(st.name)}">`;
+  ticks.forEach(t=>{ svg += `<line x1="${L}" x2="${L+pw}" y1="${Y(t)}" y2="${Y(t)}" stroke="${t?'var(--grid)':'var(--axis)'}" stroke-width="1"/><text x="${L-6}" y="${Y(t)+4}" text-anchor="end">${t}</text>`; });
+  svg += `<text x="${L-6}" y="${T-12}" text-anchor="end" style="font-size:11px">mm</text>`;
+  mt.forEach(([d,m])=>{ svg += `<line x1="${X(d)}" x2="${X(d)}" y1="${T+ph}" y2="${T+ph+4}" stroke="var(--axis)"/><text x="${X(d)+3}" y="${H-6}">${m}</text>`; });
+  const labels = [];
+  series.filter(s=>s.y!==y).forEach(s=>{
+    svg += `<path d="${line(s.P)}" fill="none" stroke="var(--prior)" stroke-width="1.5" stroke-linejoin="round"/>`;
+    const lp = lastPt(s.P); if (lp) labels.push({y:Y(lp[1]), x:X(lp[0]), t:String(s.y), c:'var(--muted)'});
+  });
+  if (cur){
+    svg += `<path d="${line(cur.E)}" fill="none" stroke="var(--eto)" stroke-width="2" stroke-linejoin="round"/>`;
+    svg += `<path d="${line(cur.P)}" fill="none" stroke="var(--rain)" stroke-width="2.25" stroke-linejoin="round"/>`;
+    const le = lastPt(cur.E), lp = lastPt(cur.P);
+    if (le) { svg += `<circle cx="${X(le[0])}" cy="${Y(le[1])}" r="4" fill="var(--eto)" stroke="var(--surface)" stroke-width="2"/>`; labels.push({y:Y(le[1]), x:X(le[0]), t:`${fmt(le[1])} ET`, c:'var(--ink2)', b:1}); }
+    if (lp) { svg += `<circle cx="${X(lp[0])}" cy="${Y(lp[1])}" r="4" fill="var(--rain)" stroke="var(--surface)" stroke-width="2"/>`; labels.push({y:Y(lp[1]), x:X(lp[0]), t:`${fmt(lp[1])} mm`, c:'var(--ink)', b:1}); }
+  }
+  // de-collide end labels
+  labels.sort((a,b)=>a.y-b.y);
+  for (let i=1;i<labels.length;i++) if (labels[i].y - labels[i-1].y < 13) labels[i].y = labels[i-1].y + 13;
+  labels.forEach(l=>{ svg += `<text x="${Math.min(l.x+7, L+pw+6)}" y="${l.y+4}" style="fill:${l.c};${l.b?'font-weight:600':''}">${l.t}</text>`; });
+  svg += `<line id="cum-x" x1="0" x2="0" y1="${T}" y2="${T+ph}" stroke="var(--axis)" stroke-width="1" visibility="hidden"/>`;
+  svg += `<rect x="${L}" y="${T}" width="${pw}" height="${ph}" fill="transparent" id="cum-hit"/>`;
+  if (!cur || cur.nP===0) svg += `<text x="${L+pw/2}" y="${T+ph/2}" text-anchor="middle" style="fill:var(--ink2);font-size:14px">No ${sn} ${y} record at this station</text>`;
+  svg += `</svg>`;
+  el.innerHTML = svg;
+  const hit = el.querySelector('#cum-hit'), xl = el.querySelector('#cum-x'), sv = el.querySelector('svg');
+  hit.addEventListener('mousemove', e=>{
+    const p = sv.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; const q = p.matrixTransform(sv.getScreenCTM().inverse());
+    const i = Math.max(0, Math.min(n-1, Math.round((q.x-L)/pw*(n-1))));
+    xl.setAttribute('x1',X(i)); xl.setAttribute('x2',X(i)); xl.setAttribute('visibility','visible');
+    const date = diso(dnum(`${y}-${String(m0).padStart(2,'0')}-01`)+i);
+    let h = `<b>${fmtDs(date)}</b> · day ${i+1} of ${sn}`;
+    if (cur){ const pv=cur.P[i], ev=cur.E[i];
+      h += `<br><span class="k" style="background:var(--rain)"></span>Rain ${y}: <b>${pv!=null?fmt(pv)+' mm':'no data'}</b>`;
+      h += `<br><span class="k" style="background:var(--eto)"></span>Ref. ET ${y}: <b>${ev!=null?fmt(ev)+' mm':'no data'}</b>`;
+      if (pv!=null && ev!=null) h += `<br>Deficit: <b>${fmt(ev-pv)} mm</b>`; }
+    series.filter(s=>s.y!==y).forEach(s=>{ if (s.P[i]!=null) h += `<br><span class="k" style="background:var(--prior)"></span>${s.y}: ${fmt(s.P[i])} mm`; });
+    showTip(h,e);
+  });
+  hit.addEventListener('mouseleave', ()=>{ xl.setAttribute('visibility','hidden'); hideTip(); });
+}
+
+function renderDaily(st){
+  const el = document.getElementById('daily');
+  const endN = Math.min(dnum(ASOF), dnum(st.last)), f = dnum(st.first), N=120;
+  const days = []; for (let d=endN-N+1; d<=endN; d++){ const i=d-f; days.push({d, p: i>=0?st.P[i]:null, e: i>=0?st.E[i]:null, t: i>=0?st.T[i]:null, fill: i>=0?st.Ef[i]:0}); }
+  document.getElementById('daily-title').textContent = `Daily rain and reference ET, ${fmtDs(diso(endN-N+1))} – ${fmtD(diso(endN))}`;
+  const W=640, H=200, L=44, R=16, T=22, B=26, pw=W-L-R, ph=H-T-B;
+  let max = 8; days.forEach(o=>{ if(o.p!=null) max=Math.max(max,o.p); if(o.e!=null) max=Math.max(max,o.e); });
+  const ticks = axisTicks(max*1.05); max = ticks[ticks.length-1];
+  const bw = pw/N, X = i => L + i*bw, Y = v => T + ph - v/max*ph;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Daily rainfall and reference evapotranspiration at ${esc(st.name)}">`;
+  ticks.forEach(t=>{ svg += `<line x1="${L}" x2="${L+pw}" y1="${Y(t)}" y2="${Y(t)}" stroke="${t?'var(--grid)':'var(--axis)'}"/><text x="${L-6}" y="${Y(t)+4}" text-anchor="end">${t}</text>`; });
+  svg += `<text x="${L-6}" y="${T-12}" text-anchor="end" style="font-size:11px">mm/d</text>`;
+  days.forEach((o,i)=>{
+    if (diso(o.d).slice(8)==='01') svg += `<line x1="${X(i)}" x2="${X(i)}" y1="${T+ph}" y2="${T+ph+4}" stroke="var(--axis)"/><text x="${X(i)+3}" y="${H-6}">${MON[+diso(o.d).slice(5,7)-1]}</text>`;
+    if (o.p==null) svg += `<rect x="${X(i)}" y="${T}" width="${bw}" height="${ph}" fill="var(--grid)" opacity=".5"/>`;
+    else if (o.p>0){ const h = Math.max(1.5, ph - (Y(o.p)-T)); svg += `<rect x="${X(i)+0.5}" y="${T+ph-h}" width="${Math.max(1,bw-1)}" height="${h}" rx="${Math.min(2,bw/2-0.5)}" fill="var(--rain)"/>`; }
+  });
+  let d='', pen=false; days.forEach((o,i)=>{ if(o.e==null){pen=false;return;} d+=(pen?'L':'M')+(X(i)+bw/2).toFixed(1)+','+Y(o.e).toFixed(1); pen=true; });
+  svg += `<path d="${d}" fill="none" stroke="var(--eto)" stroke-width="2" stroke-linejoin="round"/>`;
+  svg += `<line id="dl-x" x1="0" x2="0" y1="${T}" y2="${T+ph}" stroke="var(--axis)" visibility="hidden"/>`;
+  svg += `<rect id="dl-hit" x="${L}" y="${T}" width="${pw}" height="${ph}" fill="transparent"/></svg>`;
+  el.innerHTML = svg;
+  const sv = el.querySelector('svg'), hit = el.querySelector('#dl-hit'), xl = el.querySelector('#dl-x');
+  hit.addEventListener('mousemove', e=>{
+    const p = sv.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; const q = p.matrixTransform(sv.getScreenCTM().inverse());
+    const i = Math.max(0, Math.min(N-1, Math.floor((q.x-L)/bw))), o = days[i];
+    xl.setAttribute('x1',X(i)+bw/2); xl.setAttribute('x2',X(i)+bw/2); xl.setAttribute('visibility','visible');
+    showTip(`<b>${fmtD(diso(o.d))}</b><br><span class="k" style="background:var(--rain)"></span>Rain: <b>${o.p!=null?fmt(o.p,1)+' mm':'no data'}</b><br><span class="k" style="background:var(--eto)"></span>Ref. ET: <b>${o.e!=null?fmt(o.e,1)+' mm':'no data'}</b>${o.fill?' <span style="opacity:.75">(radiation filled)</span>':''}${o.t!=null?`<br>Mean temp: ${fmt(o.t,1)} °C`:''}`, e);
+  });
+  hit.addEventListener('mouseleave', ()=>{ xl.setAttribute('visibility','hidden'); hideTip(); });
+}
+
+// ---------- ledger ----------
+function chip(r){
+  if (r==null) return '<span class="muted">–</span>';
+  const c = cls(r);
+  return `<span class="chip" style="background:var(--c${c});color:var(--t${c})">${fmt(r,2)}</span>`;
+}
+function renderLedger(){
+  const st = byCode[state.code];
+  document.getElementById('ledger-sub').textContent = `${st.name}, all seasons with at least half their days recorded`;
+  const rows = [...st.seasons].reverse();
+  const sel = state.season;
+  document.getElementById('ledger').innerHTML = `<thead><tr><th>Season</th><th class="num">Rain mm</th><th class="num">Ref. ET mm</th><th class="num">P/ETo</th><th>Class</th><th class="num">Rainy days</th><th class="num">Longest dry spell</th><th>Onset</th><th class="num">Days recorded</th><th></th></tr></thead><tbody>` +
+    rows.map(r=>`<tr class="${r.y===sel.y&&r.s===sel.s?'sel':''}">
+      <td><b>${r.s}</b> ${r.y}${r.prog?' <span class="muted">(to date)</span>':''}</td>
+      <td class="num">${fmt(r.P)}</td><td class="num">${fmt(r.E)}</td><td class="num">${chip(r.ratio)}</td>
+      <td class="ink2">${r.ratio!=null?CLS[cls(r.ratio)]:'–'}</td>
+      <td class="num">${r.rainy}</td><td class="num">${r.dry} d</td>
+      <td>${r.onset?fmtDs(r.onset):(r.onset===null?'<span class="muted">none</span>':'')}</td>
+      <td class="num">${fmt(r.cov*100)}%</td>
+      <td>${r.zero?`<span class="flag">0 mm; network median ${fmt(r.net)} mm</span>`:(r.net!=null && r.cov>=0.8?`<span class="muted">network median ${fmt(r.net)} mm</span>`:'')}</td>
+    </tr>`).join('') + '</tbody>';
+}
+
+// ---------- heatmap ----------
+function renderHeat(){
+  const rows = [...S].sort((a,b)=>b.lat-a.lat);
+  const sel = state.season;
+  let h = `<thead><tr><th></th>${cols.map(c=>`<th class="col ${c.y===sel.y&&c.s===sel.s?'on':''}" data-s="${c.s}" data-y="${c.y}" tabindex="0">${c.s}<br>${c.y}</th>`).join('')}</tr></thead><tbody>`;
+  rows.forEach(st=>{
+    h += `<tr><th class="row ${st.code===state.code?'on':''}" data-code="${st.code}" tabindex="0">${esc(st.name)}</th>`;
+    cols.forEach(c=>{
+      const r = seasonRow(st,c.y,c.s);
+      const cur = c.y===sel.y && c.s===sel.s && st.code===state.code;
+      if (!r || r.cov<0.5){ h += `<td><div class="cell na ${cur?'cur':''}" data-code="${st.code}" data-s="${c.s}" data-y="${c.y}">·</div></td>`; return; }
+      const k = cls(r.ratio);
+      h += `<td><div class="cell ${r.cov<0.8?'part':''} ${r.zero?'zero':''} ${cur?'cur':''}" style="background:${k>=0?`var(--c${k})`:'var(--grid)'};color:${k>=0?`var(--t${k})`:'var(--ink)'}" data-code="${st.code}" data-s="${c.s}" data-y="${c.y}">${fmt(r.P)}</div></td>`;
+    });
+    h += '</tr>';
+  });
+  const t = document.getElementById('heat'); t.innerHTML = h + '</tbody>';
+  t.querySelectorAll('.cell').forEach(el=>{
+    const st = byCode[el.dataset.code], y=+el.dataset.y, s=el.dataset.s, r = seasonRow(st,y,s);
+    el.addEventListener('mousemove', e=>showTip(`<b>${esc(st.name)}</b> · ${s} ${y}<br>` + (r && r.cov>=0.5 ? `Rain <b>${fmt(r.P)} mm</b> · ET ${fmt(r.E)} mm<br>P/ETo ${fmt(r.ratio,2)}${r.ratio!=null?' · '+CLS[cls(r.ratio)]:''}<br>${fmt(r.cov*100)}% of days recorded${r.prog?' (in progress)':''}${r.zero?'<br>0 mm while network median '+fmt(r.net)+' mm':''}` : 'No record'), e));
+    el.addEventListener('mouseleave', hideTip);
+    el.addEventListener('click', ()=>{ state.code=st.code; state.season={y,s}; save(); update(); });
+  });
+  t.querySelectorAll('th.col').forEach(el=>{ const f=()=>{ state.season={y:+el.dataset.y, s:el.dataset.s}; save(); update(); }; el.addEventListener('click',f); el.addEventListener('keydown',e=>{ if(e.key==='Enter'){ f(); }}); });
+  t.querySelectorAll('th.row').forEach(el=>{ const f=()=>{ state.code=el.dataset.code; save(); update(); }; el.addEventListener('click',f); el.addEventListener('keydown',e=>{ if(e.key==='Enter'){ f(); }}); });
+}
+
+// ---------- health ----------
+function renderHealth(){
+  const rows = [...S].sort((a,b)=>b.lag-a.lag || a.name.localeCompare(b.name));
+  const silent = S.filter(s=>s.lag>30).length;
+  document.getElementById('health-sub').textContent = `${silent} of ${S.length} silent for more than 30 days · sorted by days silent`;
+  document.getElementById('health').innerHTML = `<thead><tr><th>Station</th><th>SWALIM status</th><th>Last data</th><th>Now</th><th>Rain days recorded, past 365</th><th class="num">Values rejected</th><th class="num">Radiation filled</th><th>Issue</th></tr></thead><tbody>` +
+    rows.map(st=>{
+      const [k,l] = status(st);
+      const f = Object.values(st.qc).reduce((a,[b])=>a+b,0), t = Object.values(st.qc).reduce((a,[,b])=>a+b,0);
+      const issues = [];
+      if (gaugeDead(st)) issues.push('Rain gauge reads 0 on every day');
+      else if (st.seasons.some(r=>r.zero)) issues.push('Zero-rain season: '+st.seasons.filter(r=>r.zero).map(r=>`${r.s} ${r.y}`).join(', '));
+      if (st.status==='Functioning' && st.lag>30) issues.push('Listed Functioning, but silent');
+      if (st.qc.Rs[1]===0) issues.push('No radiation sensor data');
+      else if (st.rsFilled>40) issues.push('Radiation sensor often reads low or 0');
+      return `<tr class="${st.code===state.code?'sel':''}"><td><b>${esc(st.name)}</b> <span class="mono muted">${st.code.replace('AWS_','')}</span></td>
+        <td class="ink2">${st.status}</td><td>${fmtD(st.last)}</td><td><span class="pill ${k}"><i></i>${l}</span></td>
+        <td><span class="bar"><b style="width:${st.cov365*100}%"></b></span>${fmt(st.cov365*100)}%</td>
+        <td class="num">${fmt(f)} <span class="muted">(${fmt(f/t*100,1)}%)</span></td><td class="num">${fmt(st.rsFilled)} d</td>
+        <td class="${issues.length?'flag':''}" style="white-space:normal;min-width:180px">${issues.join('; ')||'<span class="muted">–</span>'}</td></tr>`;
+    }).join('') + '</tbody>';
+}
+
+function update(){
+  document.getElementById('f-season').value = `${state.season.s}|${state.season.y}`;
+  document.getElementById('f-station').value = state.code;
+  renderMap(); renderDetail(); renderLedger(); renderHeat(); renderHealth();
+}
+renderHeader(); renderFilters(); update();
+})();
+</script>

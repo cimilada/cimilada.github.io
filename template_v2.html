@@ -1,0 +1,1986 @@
+<title>Somalia Station Water Balance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f1f4f3; --surface:#fcfcfb; --ink:#121a19; --ink2:#4b5654; --muted:#7f8886;
+  --grid:#e2e6e4; --axis:#c3cac7; --line:rgba(18,26,25,.10);
+  --land:#e6e1d3; --land-n:#e9ecea; --land-edge:#cfd4d1;
+  --rain:#2a78d6; --eto:#eb6834; --aqua:#1baf7a; --prior:#b8c0bd; --nina:#2a78d6; --nino:#eb6834;
+  /* diverging % of normal: dry (red) <- neutral -> wet (blue) */
+  --d0:#b3261e; --d1:#e34948; --d2:#f4a6a0; --d3:#dcdad4; --d4:#9ec5f4; --d5:#3987e5; --d6:#184f95;
+  --dt0:#fff; --dt1:#fff; --dt2:#3a0d0a; --dt3:#121a19; --dt4:#0b1f3a; --dt5:#fff; --dt6:#fff;
+  /* sequential rain mm */
+  --s0:#e4eefb; --s1:#b7d3f6; --s2:#86b6ef; --s3:#3987e5; --s4:#256abf; --s5:#104281;
+  --st0:#0b1f3a; --st1:#0b1f3a; --st2:#0b1f3a; --st3:#fff; --st4:#fff; --st5:#fff;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b; --good-ink:#006300; --warn-ink:#8a5a00; --crit-ink:#b02a2a;
+  --focus:#2a78d6;
+  /* weather overlays */
+  /* forecast fields: temperature (cool -> hot) and wind speed */
+  --h0:#3b6fb6; --h1:#79abd6; --h2:#b9d8c4; --h3:#f1e19a; --h4:#f3ae66; --h5:#e2703c; --h6:#b2311f;
+  --w0:#e9e6f3; --w1:#cbc2e7; --w2:#a898d8; --w3:#866fc6; --w4:#664bb0; --w5:#472c90; --w6:#2b1863;
+  --cloud:#3d5068; --wind:#17324d; --tc-cs:#c98a00; --tc-vs:#e0662f; --tc-su:#b3261e;
+  --sans:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --cond:"Barlow Condensed","Barlow",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0e1312; --surface:#161c1b; --ink:#f1f5f4; --ink2:#bdc7c4; --muted:#8a9491;
+    --grid:#253029; --axis:#3a4642; --line:rgba(255,255,255,.10);
+    --land:#2b2a24; --land-n:#1b211f; --land-edge:#323a37;
+    --rain:#3987e5; --eto:#d95926; --aqua:#199e70; --prior:#48534f; --nina:#3987e5; --nino:#d95926;
+    --d0:#ff8a80; --d1:#e05550; --d2:#7d2f2b; --d3:#3a3f3d; --d4:#1f4a80; --d5:#3987e5; --d6:#9ec5f4;
+    --dt0:#2a0705; --dt1:#fff; --dt2:#fff; --dt3:#f1f5f4; --dt4:#fff; --dt5:#fff; --dt6:#0b1f3a;
+    --s0:#1b2a3a; --s1:#184f95; --s2:#256abf; --s3:#3987e5; --s4:#6da7ec; --s5:#b7d3f6;
+    --st0:#f1f5f4; --st1:#fff; --st2:#fff; --st3:#fff; --st4:#0b1f3a; --st5:#0b1f3a;
+    --good-ink:#34c234; --warn-ink:#fab219; --crit-ink:#ef6a6a; --focus:#6da7ec;
+    --cloud:#eef3f8; --wind:#e6eef5; --tc-cs:#fab219; --tc-vs:#ff8a50; --tc-su:#ff6b6b;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0e1312; --surface:#161c1b; --ink:#f1f5f4; --ink2:#bdc7c4; --muted:#8a9491;
+  --grid:#253029; --axis:#3a4642; --line:rgba(255,255,255,.10);
+  --land:#2b2a24; --land-n:#1b211f; --land-edge:#323a37;
+  --rain:#3987e5; --eto:#d95926; --aqua:#199e70; --prior:#48534f; --nina:#3987e5; --nino:#d95926;
+  --d0:#ff8a80; --d1:#e05550; --d2:#7d2f2b; --d3:#3a3f3d; --d4:#1f4a80; --d5:#3987e5; --d6:#9ec5f4;
+  --dt0:#2a0705; --dt1:#fff; --dt2:#fff; --dt3:#f1f5f4; --dt4:#fff; --dt5:#fff; --dt6:#0b1f3a;
+  --s0:#1b2a3a; --s1:#184f95; --s2:#256abf; --s3:#3987e5; --s4:#6da7ec; --s5:#b7d3f6;
+  --st0:#f1f5f4; --st1:#fff; --st2:#fff; --st3:#fff; --st4:#0b1f3a; --st5:#0b1f3a;
+  --good-ink:#34c234; --warn-ink:#fab219; --crit-ink:#ef6a6a; --focus:#6da7ec;
+    --cloud:#eef3f8; --wind:#e6eef5; --tc-cs:#fab219; --tc-vs:#ff8a50; --tc-su:#ff6b6b;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;gap:28px}
+h1,h2,h3{font-family:var(--cond);font-weight:600;letter-spacing:.01em;text-wrap:balance;margin:0;line-height:1.1}
+h1{font-size:clamp(30px,4.4vw,44px)}
+h2{font-size:24px}
+h3{font-size:18px}
+p{margin:0}
+.eyebrow{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.mono{font-family:var(--mono);font-size:.86em}
+.muted{color:var(--muted)}
+.ink2{color:var(--ink2)}
+.small{font-size:13px}
+a{color:var(--rain)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+header.top{display:grid;gap:10px}
+header.top .lede{max-width:80ch;font-size:17px;color:var(--ink2)}
+header.top .lede b{color:var(--ink);font-weight:600}
+.v2tag{display:inline-block;font:600 11px var(--sans);letter-spacing:.08em;padding:1px 6px;border:1px solid var(--axis);border-radius:4px;color:var(--ink2);margin-left:6px;vertical-align:2px}
+
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.kpi{background:var(--surface);padding:16px 18px;display:grid;gap:4px;align-content:start}
+.kpi .v{font-family:var(--cond);font-size:38px;font-weight:600;line-height:1}
+.kpi .v small{font-size:20px;color:var(--muted);font-weight:500}
+.kpi .d{font-size:13px;color:var(--ink2)}
+@media (max-width:820px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;grid-template-columns:minmax(0,1fr);gap:14px;min-width:0}
+.panel-h{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 16px;align-items:baseline}
+.outlook{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:24px;align-items:start}
+@media (max-width:960px){.outlook{grid-template-columns:minmax(0,1fr)}}
+.facts-list{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.facts-list li{display:grid;grid-template-columns:78px 1fr;gap:12px;align-items:baseline;font-size:14px;color:var(--ink2)}
+.facts-list .n{font-family:var(--cond);font-size:26px;font-weight:600;color:var(--ink);line-height:1;text-align:right}
+.facts-list b{color:var(--ink);font-weight:600}
+
+.filters{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:end;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:10px;border-bottom:1px solid var(--line)}
+.filters label{display:grid;gap:3px;font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+select{font:500 15px var(--sans);color:var(--ink);background:var(--surface);border:1px solid var(--axis);border-radius:6px;padding:6px 30px 6px 10px;min-width:0;max-width:100%}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--ink2);align-items:center}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+.sw.hollow{background:transparent;border:1.5px solid var(--muted)}
+.ln{display:inline-block;width:16px;height:2px;vertical-align:4px;margin-right:5px;border-radius:1px}
+.seg{display:inline-flex;border:1px solid var(--axis);border-radius:6px;overflow:hidden}
+.seg button{font:500 14px var(--sans);color:var(--ink2);background:var(--surface);border:0;padding:6px 12px;cursor:pointer;border-right:1px solid var(--axis)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+
+.main{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:24px;align-items:start}
+@media (max-width:960px){.main{grid-template-columns:minmax(0,1fr)}}
+#map svg{width:100%;height:auto;display:block}
+#map .stn{cursor:pointer}
+#map .stn text{font:500 11px var(--sans);fill:var(--ink2);paint-order:stroke;stroke:var(--land);stroke-width:3px;pointer-events:none}
+
+.st-head{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:2px 9px 2px 7px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
+.pill i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.pill.good{color:var(--good-ink)} .pill.good i{background:var(--good)}
+.pill.warn{color:var(--warn-ink)} .pill.warn i{background:var(--warn)}
+.pill.crit{color:var(--crit-ink)} .pill.crit i{background:var(--crit)}
+.pill.net{color:var(--ink2);font-weight:500}
+.facts{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13px;color:var(--ink2)}
+.facts b{color:var(--ink);font-weight:600}
+.chart{position:relative}
+.chart svg{width:100%;height:auto;display:block;overflow:visible}
+.chart text{font:12px var(--sans);fill:var(--muted);font-variant-numeric:tabular-nums}
+.note{font-size:13px;color:var(--ink2);padding:8px 12px;border-left:3px solid var(--warn);background:color-mix(in srgb,var(--warn) 8%,transparent);border-radius:0 6px 6px 0}
+
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tbl-wrap.tall{max-height:460px;overflow-y:auto;border-top:1px solid var(--line)}
+.tbl-wrap.tall thead th{position:sticky;top:0;background:var(--surface);z-index:1}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:6px 10px;border-bottom:1px solid var(--axis);white-space:nowrap}
+td{padding:6px 10px;border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.num,th.num{text-align:right}
+tr.sel td{background:color-mix(in srgb,var(--rain) 8%,transparent)}
+tr.click{cursor:pointer}
+.flag{color:var(--crit-ink);font-weight:600}
+.chip{display:inline-block;min-width:52px;text-align:center;font-size:12px;font-weight:600;padding:1px 6px;border-radius:4px}
+
+.heat{border-collapse:separate;border-spacing:2px;width:auto}
+.heat th{border:0;padding:2px 3px;text-align:center;font-size:10.5px;letter-spacing:.03em}
+.heat th.row{text-align:right;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink2);font-weight:500;padding-right:8px;white-space:nowrap}
+.heat td{padding:0;border:0}
+.heat .cell{width:40px;height:26px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600}
+.heat .cell.na{background:repeating-linear-gradient(135deg,transparent 0 4px,var(--grid) 4px 5px)}
+.heat th.yr{font-size:11px;color:var(--ink2)}
+.heat th.col-sel{background:var(--ink);color:var(--surface);border-radius:4px}
+
+.rivers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:960px){.rivers{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.rivers{grid-template-columns:minmax(0,1fr)}}
+.river{display:grid;gap:4px;padding:12px;border:1px solid var(--line);border-radius:8px}
+.river .lv{font-family:var(--cond);font-size:26px;font-weight:600;line-height:1}
+.river .lv small{font-size:14px;color:var(--muted);font-weight:500}
+
+.bar{display:inline-block;width:70px;height:6px;background:var(--grid);border-radius:3px;vertical-align:middle;margin-right:6px;overflow:hidden}
+.bar b{display:block;height:100%;background:var(--rain);border-radius:3px}
+
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+@media (max-width:820px){.two{grid-template-columns:minmax(0,1fr)}}
+.prose{display:grid;gap:10px;font-size:14.5px;color:var(--ink2)}
+.prose b{color:var(--ink)}
+.prose ul{margin:0;padding-left:18px;display:grid;gap:6px}
+
+#tip{position:fixed;pointer-events:none;z-index:50;background:var(--ink);color:var(--surface);font-size:12.5px;line-height:1.45;padding:7px 10px;border-radius:6px;max-width:280px;opacity:0;transition:opacity .08s;font-variant-numeric:tabular-nums}
+#tip b{font-weight:600}
+#tip .k{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:0}
+footer{font-size:12.5px;color:var(--muted);display:grid;gap:4px}
+/* map overlays (wind, clouds, cyclones), timeline and 3D view */
+.mapbox{position:relative;max-width:100%}
+.mapbox canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.wx-read{position:absolute;left:8px;bottom:8px;font:500 12px var(--sans);font-variant-numeric:tabular-nums;color:var(--ink);background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--line);border-radius:6px;padding:3px 8px;pointer-events:none}
+.ovl{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+.ovl label{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink2);border:1px solid var(--axis);border-radius:999px;padding:3px 10px 3px 8px;cursor:pointer;user-select:none}
+.ovl label:has(input:checked){border-color:var(--ink);color:var(--ink)}
+.ovl input{accent-color:var(--ink);margin:0}
+.ovl select{font-size:13px;padding:3px 26px 3px 8px}
+.tl{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 10px;align-items:center}
+.tl input[type=range]{width:100%;accent-color:var(--ink)}
+.tl .lbl{grid-column:1/-1;font-size:13px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.tl .lbl b{color:var(--ink);font-weight:600}
+.btn{font:500 13px var(--sans);color:var(--ink);background:var(--surface);border:1px solid var(--axis);border-radius:6px;padding:5px 11px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--ink)}
+.share{display:flex;gap:8px;align-items:center;margin-left:auto}
+.share input{font:12px var(--mono);width:16ch;min-width:0;color:var(--ink2);background:var(--surface);border:1px solid var(--axis);border-radius:6px;padding:5px 8px}
+.share .ok{font-size:12.5px;color:var(--good-ink)}
+#globe{position:relative;width:100%;aspect-ratio:460/581;max-width:100%;border-radius:8px;overflow:hidden;background:var(--land-n);touch-action:none}
+#globe canvas{display:block;width:100%;height:100%}
+#globe .msg{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;color:var(--ink2);font-size:14px}
+#globe .hint{position:absolute;right:8px;bottom:8px;font-size:12px;color:var(--ink2);background:color-mix(in srgb,var(--surface) 85%,transparent);border-radius:6px;padding:2px 8px;pointer-events:none}
+/* forecast dashboard: nav, hazard strip, towns, river forecast, seas */
+.nav{display:flex;flex-wrap:wrap;gap:6px}
+.nav a{font:500 13px var(--sans);color:var(--ink2);text-decoration:none;border:1px solid var(--axis);border-radius:999px;padding:3px 11px}
+.nav a:hover{border-color:var(--ink);color:var(--ink)}
+.hz{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:10px}
+.hz a{display:grid;gap:4px;align-content:start;padding:12px 14px;border:1px solid var(--line);border-left:4px solid var(--good);border-radius:8px;background:var(--surface);color:var(--ink2);text-decoration:none;font-size:13px}
+.hz a.warn{border-left-color:var(--warn)} .hz a.serious{border-left-color:var(--serious)} .hz a.crit{border-left-color:var(--crit)}
+.hz a:hover{border-color:var(--axis)}
+.hz .t{display:flex;justify-content:space-between;gap:8px;align-items:baseline;color:var(--ink);font:600 15px var(--sans)}
+.hz .lv{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.hz a.good .lv{color:var(--good-ink)} .hz a.warn .lv{color:var(--warn-ink)} .hz a.serious .lv{color:var(--warn-ink)} .hz a.crit .lv{color:var(--crit-ink)}
+.fc-tbl{border-collapse:separate;border-spacing:2px;width:auto}
+.fc-tbl th{border:0;padding:2px 4px;text-align:center;font-size:10.5px;letter-spacing:.02em;line-height:1.2}
+.fc-tbl th.row{text-align:right;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);font-weight:600;padding-right:8px;white-space:nowrap}
+.fc-tbl th.row span{display:block;font-size:11px;color:var(--muted);font-weight:500}
+.fc-tbl td{padding:0;border:0}
+.fc-tbl .cell{min-width:38px;height:30px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:var(--grid);color:var(--ink2)}
+.fc-tbl .cell.blank{background:transparent;color:var(--muted);font-weight:400}
+.fc-tbl th.we{color:var(--ink)}
+.ports{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+@media (max-width:960px){.ports{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:480px){.ports{grid-template-columns:minmax(0,1fr)}}
+.field-lg{display:flex;flex-wrap:wrap;gap:3px 12px;font-size:12.5px;color:var(--ink2);align-items:center}
+/* standards: raw data viewer, CAP, point forecast, EPSgram */
+.raw-box{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--bg);min-width:0}
+.raw-h{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
+.raw-h label{flex-wrap:wrap;min-width:0;max-width:100%}
+.raw-h select{min-width:0;max-width:100%;width:auto}
+pre.raw{margin:0;max-height:360px;overflow:auto;font:12px/1.5 var(--mono);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px;white-space:pre}
+.cap{display:flex;flex-wrap:wrap;gap:2px 10px;font-size:11.5px;color:var(--muted)}
+.cap b{color:var(--ink2);font-weight:600}
+.raw-tbl{max-height:380px;overflow:auto;border:1px solid var(--line);border-radius:6px}
+.raw-tbl table{font-size:12.5px}
+.raw-tbl th{position:sticky;top:0;background:var(--surface);z-index:1}
+.raw-tbl td{font-family:var(--mono);font-size:12px}
+.probe-h{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;justify-content:space-between}
+.fc-tbl .cell[data-t],.fc-tbl th.row[data-t]{cursor:pointer}
+.fc-tbl tr.sel th.row{color:var(--rain)}
+.age{font-size:12px;font-weight:600;color:var(--good-ink)}
+.age.stale{color:var(--crit-ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">SWALIM gauges + AWS · CHIRPS v3 · ECMWF SEAS5 · CHIRPS3-GEFS · FRRIMS <span class="v2tag">V2</span></div>
+    <h1>Somalia Station Water Balance</h1>
+    <p class="lede" id="lede"></p>
+  </header>
+
+  <nav class="nav" aria-label="Sections"><a href="#hazards">Hazards</a><a href="#maparea">Forecast map</a><a href="#towns">Town forecasts</a><a href="#flood-h">Rivers and floods</a><a href="#ol-h">Deyr outlook</a><a href="#marine">Seas</a><a href="#ledger-h">Seasons</a><a href="#heat-h">Regions</a><a href="#health-h">Stations</a><a href="#datasets">Data</a></nav>
+
+  <section class="panel" id="hazards" aria-labelledby="hz-h">
+    <div class="panel-h"><h2 id="hz-h">Hazards, next 7 days</h2><span class="muted small" id="hz-sub"></span></div>
+    <div class="legend"><span><i class="sw" style="background:var(--good)"></i>Green: no warning</span><span><i class="sw" style="background:var(--warn)"></i>Yellow: be aware</span><span><i class="sw" style="background:var(--serious)"></i>Orange: be prepared</span><span><i class="sw" style="background:var(--crit)"></i>Red: take action</span><span class="muted">WMO impact-based warning colours</span><button type="button" class="btn" id="cap-btn" style="margin-left:auto">Show CAP 1.2 alerts</button></div>
+    <div class="hz" id="hz"></div>
+    <div class="raw-box" id="cap-box" hidden>
+      <div class="raw-h"><span class="small ink2" id="cap-sub"></span><span style="display:flex;gap:8px;align-items:center"><span class="ok small" id="cap-ok" role="status" style="color:var(--good-ink)"></span><button type="button" class="btn" id="cap-copy">Copy XML</button></span></div>
+      <pre class="raw" id="cap-xml"></pre>
+    </div>
+  </section>
+
+  <div class="filters" role="group" aria-label="Filters">
+    <label for="f-layer">Map layer<select id="f-layer">
+      <option value="deyr26">Deyr 2026 forecast (SEAS5)</option>
+      <option value="gefs">Next 16 days (CHIRPS3-GEFS)</option>
+      <option value="season">Observed season, % of normal</option>
+    </select></label>
+    <label for="f-season">Season<select id="f-season"></select></label>
+    <label for="f-station">Station<select id="f-station"></select></label>
+    <div class="legend" id="map-legend" aria-label="Map legend"></div>
+    <div class="share"><button type="button" class="btn" id="share-btn">Copy link to this view</button><input id="share-url" readonly aria-label="Link to this view" hidden><span class="ok" id="share-ok" role="status"></span></div>
+  </div>
+
+  <section class="main">
+    <div class="panel" id="maparea">
+      <div class="panel-h"><h2 id="map-title"></h2>
+        <div class="seg" role="group" aria-label="View"><button type="button" data-view="2d" aria-pressed="true">Map</button><button type="button" data-view="3d" aria-pressed="false">3D terrain</button></div>
+      </div>
+      <div class="ovl" id="ovl" role="group" aria-label="Weather overlays">
+        <label><input type="checkbox" id="o-wind"> Wind</label>
+        <select id="o-model" aria-label="Wind model"><option value="gfs">GFS</option><option value="ecmwf">ECMWF</option><option value="aifs">ECMWF AIFS (AI)</option></select>
+        <label><input type="checkbox" id="o-cloud"> Clouds</label>
+        <label><input type="checkbox" id="o-barb"> Wind barbs</label>
+        <label><input type="checkbox" id="o-tc"> Cyclone tracks</label>
+        <label><input type="checkbox" id="o-img"> Satellite basemap</label>
+        <select id="o-field" aria-label="Forecast field"><option value="">No forecast field</option><option value="rain3">Rain, 3 hours</option><option value="rain24">Rain, next 24 hours</option><option value="temp">Temperature</option><option value="wspd">Wind speed</option></select>
+        <select id="o-unit" aria-label="Wind speed unit"><option value="ms">m/s</option><option value="kmh">km/h</option><option value="kt">knots</option></select>
+      </div>
+      <div class="field-lg" id="field-lg" hidden></div>
+      <div class="mapbox" id="mapbox"><div id="map"></div><canvas id="wind" aria-hidden="true"></canvas><div class="wx-read" id="wx-read" hidden></div></div>
+      <div id="globe" hidden></div>
+      <div class="tl" id="tl" hidden>
+        <button type="button" class="btn" id="tl-play">Play</button>
+        <input type="range" id="tl-t" step="1" aria-label="Time">
+        <button type="button" class="btn" id="tl-now">Now</button>
+        <div class="lbl" id="tl-lbl"></div>
+      </div>
+      <div class="raw-box" id="probe" hidden>
+        <div class="probe-h"><h3 id="probe-title">Point forecast</h3><span style="display:flex;gap:8px"><button type="button" class="btn" id="probe-csv">Copy CSV</button><button type="button" class="btn" id="probe-close">Close</button></span></div>
+        <div class="legend" id="probe-legend"></div>
+        <div class="chart" id="probe-chart"></div>
+        <p class="muted small" id="probe-note"></p>
+      </div>
+      <p class="muted" style="font-size:12.5px" id="map-note"></p>
+      <p class="muted" style="font-size:12.5px" id="wx-note"></p>
+    </div>
+
+    <div class="panel" id="detail">
+      <div style="display:grid;gap:4px">
+        <div class="st-head"><h2 id="st-name"></h2><span id="st-pill"></span></div>
+        <div class="facts" id="st-facts"></div>
+      </div>
+      <div id="st-note" style="display:grid;gap:6px"></div>
+      <div style="display:grid;gap:6px" id="st-fc-wrap">
+        <div class="panel-h"><h3 id="st-fc-title">Next 7 days here</h3>
+          <div class="legend" id="st-fc-legend"></div>
+        </div>
+        <div class="chart" id="st-fc"></div>
+      </div>
+      <div style="display:grid;gap:6px">
+        <div class="panel-h"><h3 id="hist-title"></h3>
+          <div class="legend" id="hist-legend"></div>
+        </div>
+        <div class="chart" id="hist"></div>
+      </div>
+      <div style="display:grid;gap:6px">
+        <div class="panel-h"><h3 id="cum-title"></h3>
+          <div class="legend"><span><i class="ln" style="background:var(--rain)"></i><span id="lg-sel">Rain</span></span><span><i class="ln" style="background:var(--eto)"></i>Reference ET</span><span><i class="ln" style="background:var(--prior)"></i>Rain, other years</span></div>
+        </div>
+        <div class="chart" id="cum"></div>
+      </div>
+      <div style="display:grid;gap:6px">
+        <div class="panel-h"><h3 id="daily-title"></h3>
+          <div class="legend"><span><i class="sw" style="background:var(--rain)"></i>Daily rain</span><span><i class="ln" style="background:var(--eto)"></i>Daily reference ET</span></div>
+        </div>
+        <div class="chart" id="daily"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="towns" aria-labelledby="towns-h">
+    <div class="panel-h"><h2 id="towns-h">Town forecasts</h2>
+      <div class="seg" role="group" aria-label="Town forecast"><button type="button" data-tv="rain" aria-pressed="true">Rain, 2 weeks</button><button type="button" data-tv="heat" aria-pressed="false">Heat, 7 days</button><button type="button" data-tv="dust" aria-pressed="false">Dust, 5 days</button></div>
+    </div>
+    <p class="muted small" id="towns-sub"></p>
+    <div class="tbl-wrap"><table class="fc-tbl" id="towns-tbl"></table></div>
+    <div class="legend" id="towns-legend"></div>
+    <div class="raw-box" id="eps" hidden>
+      <div class="probe-h"><h3 id="eps-title"></h3><span class="muted small">ECMWF EPSgram style: line min–max, narrow box 10–90%, wide box 25–75%, bar median</span></div>
+      <div class="chart" id="eps-chart"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h"><h2 id="flood-h">Flood watch: Juba and Shabelle</h2><span class="muted small" id="rv-sub"></span></div>
+    <div class="legend"><span><i class="ln" style="background:var(--rain)"></i>2026 level</span><span><i class="ln" style="background:var(--prior)"></i>2025</span><span><i class="ln" style="background:var(--muted)"></i>Long-term mean</span><span><i class="ln" style="background:var(--warn)"></i>Moderate risk</span><span><i class="ln" style="background:var(--crit)"></i>High risk</span></div>
+    <div class="rivers" id="rivers"></div>
+    <div class="panel-h" id="rivers-fc"><h3>River flow forecast, next 30 days</h3><span class="muted small" id="rvf-sub"></span></div>
+    <div class="legend"><span><i class="ln" style="background:var(--ink)"></i>Past 60 days</span><span><i class="ln" style="background:var(--rain)"></i>Forecast median</span><span><i class="sw" style="background:color-mix(in srgb,var(--rain) 35%,transparent)"></i>Middle half of members</span><span><i class="sw" style="background:color-mix(in srgb,var(--rain) 14%,transparent)"></i>Full range</span><span><i class="ln" style="background:var(--crit)"></i>Model's Nov 2023 flood peak</span></div>
+    <div class="rivers" id="rivers-fc-grid"></div>
+  </section>
+
+  <section class="kpis" id="kpis" aria-label="Summary"></section>
+
+  <section class="panel" aria-labelledby="ol-h">
+    <div class="panel-h"><h2 id="ol-h">Deyr 2026 outlook</h2><span class="muted small">Oct–Dec rainfall over Somalia, 1981–2025 (CHIRPS v3), against the Indian Ocean Dipole</span></div>
+    <div class="outlook">
+      <div style="display:grid;gap:8px">
+        <div class="legend"><span><i class="sw" style="background:var(--nino);border-radius:50%"></i>El Niño year (Niño3.4 ≥ +0.5 in Sep–Nov)</span><span><i class="sw" style="background:var(--nina);border-radius:50%"></i>La Niña year (≤ −0.5)</span><span><i class="sw" style="background:var(--prior);border-radius:50%"></i>Neutral</span><span><i class="sw hollow" style="border-radius:50%;border-color:var(--ink)"></i>2026 model scenarios</span></div>
+        <div class="chart" id="scatter"></div>
+      </div>
+      <div style="display:grid;gap:18px;align-content:start">
+        <ul class="facts-list" id="ol-facts"></ul>
+        <div style="display:grid;gap:6px">
+          <div class="panel-h"><h3>Ocean drivers, monthly</h3><span class="muted small">NOAA PSL, °C anomaly</span></div>
+          <div class="chart" id="idx"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="marine" aria-labelledby="marine-h">
+    <div class="panel-h"><h2 id="marine-h">Sea state at the ports, next 7 days</h2><span class="muted small" id="marine-sub"></span></div>
+    <div class="legend"><span><i class="sw" style="background:var(--good)"></i>Under 1.25 m</span><span><i class="sw" style="background:var(--warn)"></i>1.25–2.5 m, moderate</span><span><i class="sw" style="background:var(--serious)"></i>2.5–4 m, rough for small boats</span><span><i class="sw" style="background:var(--crit)"></i>4 m or more</span><span><i class="sw" style="background:var(--ink);border-radius:50%"></i>Swell height</span></div>
+    <div class="ports" id="ports"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h"><h2 id="ledger-h">Season ledger</h2><span class="muted small" id="ledger-sub"></span></div>
+    <div class="tbl-wrap tall"><table id="ledger"></table></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h"><h2 id="heat-h">Twenty years of Gu and Deyr by region</h2><span class="muted small">median gauge, % of CHIRPS 1991–2020 normal · north at top</span></div>
+    <div class="tbl-wrap"><table class="heat" id="heat"></table></div>
+    <div class="legend" id="heat-legend"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-h"><h2 id="health-h">Station health</h2>
+      <div class="seg" role="group" aria-label="Network"><button type="button" data-net="all" aria-pressed="true">All</button><button type="button" data-net="Gauge" aria-pressed="false">Rain gauges</button><button type="button" data-net="AWS" aria-pressed="false">Weather stations</button></div>
+    </div>
+    <p class="muted small" id="health-sub"></p>
+    <div class="tbl-wrap tall"><table id="health"></table></div>
+  </section>
+
+  <section class="panel" id="datasets" aria-labelledby="data-h">
+    <div class="panel-h"><h2 id="data-h">Data</h2><span class="muted small">Every dataset on this page, with units, resolution, age and licence. Times are UTC unless marked.</span></div>
+    <div class="tbl-wrap"><table id="catalog"></table></div>
+    <div class="raw-box">
+      <div class="raw-h">
+        <label for="raw-ds" class="small ink2" style="display:flex;gap:8px;align-items:center">Raw values<select id="raw-ds"></select></label>
+        <span style="display:flex;gap:8px;align-items:center"><span class="small" id="raw-ok" role="status" style="color:var(--good-ink)"></span><button type="button" class="btn" id="raw-copy">Copy CSV</button></span>
+      </div>
+      <p class="muted small" id="raw-sub"></p>
+      <div class="raw-tbl"><table id="raw-tbl"></table></div>
+    </div>
+  </section>
+
+  <section class="two">
+    <div class="panel prose">
+      <h2>Sources and method</h2>
+      <ul id="method"></ul>
+    </div>
+    <div class="panel prose">
+      <h2>How well each source holds up</h2>
+      <ul id="valid"></ul>
+    </div>
+  </section>
+
+  <footer>
+    <span id="foot"></span>
+    <span>Pipeline: <span class="mono">scrape.py → process.py → fetch_v2.py → process_v2.py → fetch_wx.py → fetch_fc.py → build.py</span>. Boundaries from Natural Earth 1:50m.</span>
+  </footer>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+(function(){
+const D = JSON.parse(document.getElementById('data').textContent);
+const S = D.stations;
+const byCode = Object.fromEntries(S.map(s=>[s.code,s]));
+const ASOF = D.asof, MS = 864e5;
+const dnum = iso => Date.UTC(+iso.slice(0,4), +iso.slice(5,7)-1, +iso.slice(8,10))/MS;
+const diso = n => new Date(n*MS).toISOString().slice(0,10);
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fmtD = iso => { const d=new Date(iso+'T00:00:00Z'); return d.getUTCDate()+' '+MON[d.getUTCMonth()]+' '+d.getUTCFullYear(); };
+const fmtDs = iso => { const d=new Date(iso+'T00:00:00Z'); return d.getUTCDate()+' '+MON[d.getUTCMonth()]; };
+const SEAS = {Jilaal:[1,3],Gu:[4,6],Hagaa:[7,9],Deyr:[10,12]};
+const fmt = (v,d=0) => v==null||isNaN(v) ? '–' : v.toLocaleString('en-US',{maximumFractionDigits:d,minimumFractionDigits:d});
+const sgn = (v,d=1) => (v>0?'+':v<0?'−':'')+fmt(Math.abs(v),d);
+const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const seasonRow = (s,y,name) => s.seasons.find(r=>r.y===y && r.s===name);
+// gauges are read by observers and entered in batches, so they get a longer reporting window
+const LAG = s => s.net==='AWS' ? [3,30] : [14,45];
+const status = s => s.lag<=LAG(s)[0] ? ['good','Reporting'] : s.lag<=LAG(s)[1] ? ['warn',`Delayed ${s.lag} d`] : ['crit',`Silent ${s.lag} d`];
+const silent = s => s.lag>LAG(s)[1];
+const label = s => s.name + (s.net==='AWS' ? ' (AWS)' : '');
+const med = a => { const b=[...a].sort((x,y)=>x-y); const m=b.length>>1; return b.length? (b.length%2?b[m]:(b[m-1]+b[m])/2) : null; };
+
+// % of normal: 7 diverging classes
+const PB = [50,75,90,110,150,200];
+const PL = ['≤ 50%','50–75%','75–90%','90–110%','110–150%','150–200%','> 200%'];
+const pcls = p => p==null ? -1 : PB.filter(b=>p>b).length;
+// rain mm: 6 sequential classes
+const MB = [5,10,25,50,100];
+const ML = ['< 5 mm','5–10','10–25','25–50','50–100','> 100 mm'];
+const mcls = v => v==null ? -1 : MB.filter(b=>v>=b).length;
+
+// ---------- state ----------
+const cols = [];
+for (let y=2005; y<=+ASOF.slice(0,4); y++) for (const n of ['Gu','Deyr']) if (`${y}-${String(SEAS[n][0]).padStart(2,'0')}-01` <= ASOF) cols.push({y, s:n});
+const WX = D.wx || null;
+const state = {layer:'deyr26', season:{y:2026,s:'Gu'}, code: byCode['MRS_HIBEL'] ? 'MRS_HIBEL' : S[0].code, net:'all',
+  ov:{wind:!!WX, cloud:!!WX, tc:false, img:false, barb:false}, model:'gfs', view:'2d', t:0, field:'', tv:'rain', unit:'ms', probe:null, town:'Mogadishu'};
+const FIELDS = ['rain3','rain24','temp','wspd'], MODELS = ['gfs','ecmwf','aifs'];
+const LAYERS = ['deyr26','gefs','season'];
+function loadSaved(v){
+  if (!v) return;
+  if (byCode[v.code]) state.code=v.code;
+  if (LAYERS.includes(v.layer)) state.layer=v.layer;
+  if (v.season && cols.some(c=>c.y===v.season.y&&c.s===v.season.s)) state.season=v.season;
+  if (v.ov && WX) for (const k of Object.keys(state.ov)) if (typeof v.ov[k]==='boolean') state.ov[k]=v.ov[k];
+  if (MODELS.includes(v.model) && (!WX || WX.wind.models[v.model])) state.model=v.model;
+  if (v.field==='' || FIELDS.includes(v.field)) state.field=v.field ?? state.field;
+  if (v.view==='2d'||v.view==='3d') state.view=v.view;
+  if (['ms','kmh','kt'].includes(v.unit)) state.unit=v.unit;
+}
+try { loadSaved(JSON.parse(localStorage.getItem('swb2')||'null')); } catch(e){}
+const save = () => { try { localStorage.setItem('swb2', JSON.stringify({code:state.code,layer:state.layer,season:state.season,ov:state.ov,model:state.model,view:state.view,field:state.field,unit:state.unit})); } catch(e){} };
+
+// ---------- share links ----------
+// The artifact frame only passes a bare #token (letters, digits, . _ ~ -), so the view is
+// packed as  station.layer.SeasonYear.overlays.view.time , e.g. #MRS_HIBEL.deyr26.Gu2026.wcE.2d.p6
+// overlays: w wind, c clouds, t cyclone tracks, i imagery, b wind barbs; model E = ECMWF, A = AIFS (else GFS);
+// field R rain 3 h, D rain 24 h, H temperature, S wind speed. time: p6 = +6 h, m12 = -12 h.
+const SHARE_BASE = '__SHARE_BASE__';
+const OVK = {wind:'w', cloud:'c', tc:'t', img:'i', barb:'b'}, FLK = {rain3:'R', rain24:'D', temp:'H', wspd:'S'};
+function viewToken(){
+  const ov = Object.entries(OVK).filter(([k])=>state.ov[k]).map(([,c])=>c).join('') + ({ecmwf:'E', aifs:'A'}[state.model]||'') + (FLK[state.field]||'');
+  return [state.code, state.layer, state.season.s+state.season.y, ov||'x', state.view, (state.t<0?'m':'p')+Math.abs(state.t)].join('.');
+}
+function readToken(h){
+  const p = h.replace(/^#/,'').split('.');
+  if (p.length<3 || !byCode[p[0]]) return false;
+  const v = {code:p[0], layer:p[1]};
+  const m = /^(Gu|Deyr)(\d{4})$/.exec(p[2]||''); if (m) v.season = {s:m[1], y:+m[2]};
+  if (p[3]){ v.ov = {}; for (const [k,c] of Object.entries(OVK)) v.ov[k] = p[3].includes(c); v.model = p[3].includes('A') ? 'aifs' : p[3].includes('E') ? 'ecmwf' : 'gfs'; v.field = Object.keys(FLK).find(k=>p[3].includes(FLK[k])) || ''; }
+  if (p[4]) v.view = p[4];
+  loadSaved(v);
+  const t = /^([pm])(\d{1,3})$/.exec(p[5]||''); if (t) state.t = (t[1]==='m'?-1:1)*+t[2];
+  return true;
+}
+readToken(location.hash);
+function shareUrl(){
+  const base = SHARE_BASE.startsWith('http') ? SHARE_BASE : location.href.split('#')[0];
+  return base + '#' + viewToken();
+}
+document.getElementById('share-btn').addEventListener('click', ()=>{
+  const url = shareUrl(), ok = document.getElementById('share-ok'), box = document.getElementById('share-url');
+  const fallback = () => { box.value = url; box.hidden = false; box.focus(); box.select(); ok.textContent = 'Copy the selected link'; };
+  try { navigator.clipboard.writeText(url).then(()=>{ box.hidden = true; ok.textContent = 'Link copied'; setTimeout(()=>{ ok.textContent=''; }, 2500); }, fallback); }
+  catch(e){ fallback(); }
+});
+addEventListener('hashchange', ()=>{ if (readToken(location.hash)){ syncControls(); update(); } });
+
+// ---------- tooltip ----------
+const tip = document.getElementById('tip');
+function showTip(html, ev){
+  tip.innerHTML = html; tip.style.opacity = 1;
+  const r = tip.getBoundingClientRect();
+  let x = ev.clientX + 14, y = ev.clientY + 14;
+  if (x + r.width > innerWidth - 8) x = ev.clientX - r.width - 14;
+  if (y + r.height > innerHeight - 8) y = ev.clientY - r.height - 14;
+  tip.style.left = Math.max(8,x)+'px'; tip.style.top = Math.max(8,y)+'px';
+}
+const hideTip = () => { tip.style.opacity = 0; };
+const svgPoint = (sv, e) => { const p = sv.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(sv.getScreenCTM().inverse()); };
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+// ticks that reach at least max (axisTicks alone can stop one step short)
+function ticksCover(max){ const t = axisTicks(max), st = t.length>1 ? t[1]-t[0] : max||1; while (t[t.length-1] < max) t.push(+(t[t.length-1]+st).toFixed(2)); return t; }
+function axisTicks(max){ const step=[0.5,1,2,5,10,20,25,50,100,200,250,500,1000].find(s=>max/s<=5)||1000; const t=[]; for(let v=0; v<=max+1e-9; v+=step) t.push(+v.toFixed(2)); return t; }
+
+// ---------- header ----------
+function renderHeader(){
+  const M = D.model, sm = D.summary, B = D.bom;
+  const gauges = S.filter(s=>s.net==='Gauge'), aws = S.filter(s=>s.net==='AWS');
+  const gRep = gauges.filter(s=>status(s)[0]==='good').length, aRep = aws.filter(s=>status(s)[0]==='good').length;
+  const mid = M.scen[1];
+  document.getElementById('lede').innerHTML =
+    `<b>Deyr 2026 is shaping up like 1997 and 2023, the two worst flood years in the record.</b> El Niño is strong (Niño3.4 ${sgn(B.nino,2)} °C) and the Indian Ocean Dipole is turning positive (${sgn(B.iod,2)} °C). Since 1981, every Deyr with an El Niño this strong has been wetter than the median. ` +
+    `SEAS5 puts ${sm.seas5_wet} of ${sm.seas5_n} stations at 125% of normal or more. ` +
+    `<b>Gu 2026 was poor.</b> The weather stations missed it, but ${sm.gu26_n} rain gauges recorded a median of ${fmt(sm.gu26_median_pct)}% of normal.`;
+  const k = [
+    [`${fmt(mid.rain/M.mean*100)}<small>%</small>`, 'Deyr 2026, statistical', `Of the 1981–2025 mean if Sep–Nov IOD reaches ${sgn(mid.dmi,1)}. ${M.elnino_above_median} of ${M.elnino.length} El Niño Deyrs above median`],
+    [`${fmt(sm.seas5_median_pct)}<small>%</small>`, 'Deyr 2026, ECMWF SEAS5', `Median station, Oct–Dec against model normal. ${sm.seas5_wet} of ${sm.seas5_n} at 125% or more`],
+    [`${fmt(sm.gu26_median_pct)}<small>%</small>`, 'Gu 2026 observed', `Median of ${sm.gu26_n} gauges against CHIRPS normal. ${sm.gu26_below75} below 75%`],
+    [`${gRep}<small> / ${gauges.length}</small>`, 'Rain gauges reporting', `Within 14 days. Weather stations: ${aRep} of ${aws.length} within 3 days`],
+  ];
+  document.getElementById('kpis').innerHTML = k.map(([v,l,d])=>`<div class="kpi"><span class="eyebrow">${l}</span><span class="v">${v}</span><span class="d">${d}</span></div>`).join('');
+  document.getElementById('foot').textContent = `Station data to ${fmtD(ASOF)}. Built ${fmtD(D.built)}. ${gauges.length} rain gauges and ${aws.length} weather stations from SWALIM ClimSeries.`;
+}
+
+// ---------- outlook ----------
+function renderOutlook(){
+  const M = D.model, B = D.bom, sm = D.summary;
+  const rows = M.rows;
+  const W=640, H=330, L=48, R=20, T=16, B_=40, pw=W-L-R, ph=H-T-B_;
+  const xmin=-1.25, xmax=1.5, ymax=560;
+  const X = v => L + (v-xmin)/(xmax-xmin)*pw, Y = v => T + ph - v/ymax*ph;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Deyr rainfall against Sep–Nov IOD, 1981–2025">`;
+  axisTicks(ymax).forEach(t=>{ s+=`<line x1="${L}" x2="${L+pw}" y1="${Y(t)}" y2="${Y(t)}" stroke="${t?'var(--grid)':'var(--axis)'}"/><text x="${L-6}" y="${Y(t)+4}" text-anchor="end">${t}</text>`; });
+  [-1,-0.5,0,0.5,1,1.5].forEach(t=>{ s+=`<line x1="${X(t)}" x2="${X(t)}" y1="${T+ph}" y2="${T+ph+4}" stroke="var(--axis)"/><text x="${X(t)}" y="${T+ph+17}" text-anchor="middle">${t>0?'+':''}${t}</text>`; });
+  s += `<line x1="${X(0)}" x2="${X(0)}" y1="${T}" y2="${T+ph}" stroke="var(--grid)"/>`;
+  s += `<text x="${L+pw}" y="${H-4}" text-anchor="end">Indian Ocean Dipole, Sep–Nov mean (°C) →</text><text x="${L-6}" y="${T-4}" text-anchor="end" style="font-size:11px">mm</text>`;
+  s += `<line x1="${L}" x2="${L+pw}" y1="${Y(M.mean)}" y2="${Y(M.mean)}" stroke="var(--muted)" stroke-width="1"/><text x="${L+4}" y="${Y(M.mean)-5}">1981–2025 mean ${fmt(M.mean)} mm</text>`;
+  // 2026 scenarios
+  const sc = M.scen;
+  s += `<rect x="${X(sc[0].dmi)}" y="${Y(sc[2].rain+M.sd)}" width="${X(sc[2].dmi)-X(sc[0].dmi)}" height="${Y(sc[0].rain-M.sd)-Y(sc[2].rain+M.sd)}" fill="var(--ink)" opacity=".06" rx="4"/>`;
+  sc.forEach(p=>{ s+=`<circle cx="${X(p.dmi)}" cy="${Y(p.rain)}" r="6" fill="var(--surface)" stroke="var(--ink)" stroke-width="2"/>`; });
+  s += `<text x="${X(sc[2].dmi)}" y="${Y(sc[2].rain+M.sd)-6}" text-anchor="end" style="fill:var(--ink);font-weight:600">2026 scenarios, ${fmt(sc[0].rain)}–${fmt(sc[2].rain)} mm</text>`;
+  const LBL = new Set([1997,2023,2019,2006,1982,2025,2010,2015,1996]);
+  const dots = [...rows].sort((a,b)=>Math.abs(a.nino)-Math.abs(b.nino));
+  dots.forEach(r=>{
+    const c = r.nino>=0.5 ? 'var(--nino)' : r.nino<=-0.5 ? 'var(--nina)' : 'var(--prior)';
+    s += `<circle class="pt" data-y="${r.y}" cx="${X(r.dmi)}" cy="${Y(r.rain)}" r="5" fill="${c}" stroke="var(--surface)" stroke-width="2"/>`;
+    if (LBL.has(r.y)) s += `<text x="${X(r.dmi)+8}" y="${Y(r.rain)+4}" style="fill:var(--ink2);font-weight:${r.y>=2023?600:400}">${r.y}</text>`;
+  });
+  rows.forEach(r=>{ s += `<circle class="hit" data-y="${r.y}" cx="${X(r.dmi)}" cy="${Y(r.rain)}" r="12" fill="transparent"/>`; });
+  s += `</svg>`;
+  const el = document.getElementById('scatter'); el.innerHTML = s;
+  el.querySelectorAll('.hit').forEach(c=>{
+    const r = rows.find(x=>x.y===+c.dataset.y);
+    c.addEventListener('mousemove', e=>showTip(`<b>Deyr ${r.y}</b><br>${fmt(r.rain)} mm (${fmt(r.rain/M.mean*100)}% of mean)<br>IOD ${sgn(r.dmi,2)} · Niño3.4 ${sgn(r.nino,2)}<br>Model, year held out: ${fmt(r.loo)} mm`, e));
+    c.addEventListener('mouseleave', hideTip);
+  });
+  const facts = [
+    [fmt(M.rD,2), `<b>Correlation with the IOD</b> over 45 Deyr seasons. With Niño3.4 it is ${fmt(M.rN,2)}. Gu shows no link to either.`],
+    [`${fmt(M.hit*100)}%`, `<b>Tercile hit rate</b> with each year held out (chance is 33%). Cross-validated r = ${fmt(M.loo_r,2)}.`],
+    [`${M.elnino_above_median}/${M.elnino.length}`, `<b>El Niño Deyrs above median</b>: ${M.elnino.join(', ')}. The 1997 and 2023 seasons brought major Juba and Shabelle floods.`],
+    [`${fmt(sc[0].rain/M.mean*100)}–${fmt(sc[2].rain/M.mean*100)}%`, `<b>Model range for 2026</b>, for IOD ${sgn(sc[0].dmi,1)} to ${sgn(sc[2].dmi,1)} and Niño3.4 ${sgn(sc[0].nino,1)} to ${sgn(sc[2].nino,1)}. 2026 Niño3.4 is beyond the record's maximum of ${sgn(M.max_nino,1)}, so read this as a direction, not a total.`],
+    [`${sgn(B.iod,2)}`, `<b>IOD this week</b> (BoM, ${fmtDs(B.date)}). BoM expects about ${sgn(B.iod_son,1)} in Sep–Nov. Relative Niño3.4: ${sgn(B.nino,2)} °C.`],
+  ];
+  document.getElementById('ol-facts').innerHTML = facts.map(([n,t])=>`<li><span class="n">${n}</span><span>${t}</span></li>`).join('');
+
+  // index chart
+  const I = D.indices, all = [...I.nino, ...I.dmi];
+  const months = [...new Set(all.map(a=>a[0]))].sort();
+  const W2=420, H2=170, L2=34, R2=64, T2=10, B2=24, pw2=W2-L2-R2, ph2=H2-T2-B2;
+  const lo = Math.min(-1, ...all.map(a=>a[1])), hi = Math.max(2, ...all.map(a=>a[1]));
+  const X2 = m => L2 + months.indexOf(m)/(months.length-1)*pw2, Y2 = v => T2 + (hi-v)/(hi-lo)*ph2;
+  let t = `<svg viewBox="0 0 ${W2} ${H2}" role="img" aria-label="Niño3.4 and DMI monthly since 2023">`;
+  for (let v=Math.ceil(lo); v<=hi; v++) t += `<line x1="${L2}" x2="${L2+pw2}" y1="${Y2(v)}" y2="${Y2(v)}" stroke="${v===0?'var(--axis)':'var(--grid)'}"/><text x="${L2-6}" y="${Y2(v)+4}" text-anchor="end">${v>0?'+':''}${v}</text>`;
+  months.forEach(m=>{ if (m.endsWith('-01')) t += `<text x="${X2(m)}" y="${H2-6}" text-anchor="middle">${m.slice(0,4)}</text>`; });
+  const path = arr => 'M'+arr.map(([m,v])=>`${X2(m).toFixed(1)},${Y2(v).toFixed(1)}`).join('L');
+  [['nino','var(--nino)','Niño3.4'],['dmi','var(--aqua)','IOD (DMI)']].forEach(([k,c,n])=>{
+    const a = I[k]; if (!a.length) return;
+    t += `<path d="${path(a)}" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round"/>`;
+    const e = a[a.length-1];
+    t += `<circle cx="${X2(e[0])}" cy="${Y2(e[1])}" r="3.5" fill="${c}" stroke="var(--surface)" stroke-width="1.5"/><text x="${X2(e[0])+7}" y="${Y2(e[1])+4}" style="fill:var(--ink2);font-weight:600">${n} ${sgn(e[1],1)}</text>`;
+    t += `<text x="${X2(e[0])+7}" y="${Y2(e[1])+17}" style="font-size:10.5px">${MON[+e[0].slice(5)-1]} ${e[0].slice(0,4)}</text>`;
+  });
+  t += `<rect id="ix-hit" x="${L2}" y="${T2}" width="${pw2}" height="${ph2}" fill="transparent"/></svg>`;
+  const ie = document.getElementById('idx'); ie.innerHTML = t;
+  const sv = ie.querySelector('svg');
+  ie.querySelector('#ix-hit').addEventListener('mousemove', e=>{
+    const q = svgPoint(sv,e); const i = Math.max(0,Math.min(months.length-1,Math.round((q.x-L2)/pw2*(months.length-1)))); const m = months[i];
+    const n = I.nino.find(a=>a[0]===m), d = I.dmi.find(a=>a[0]===m);
+    showTip(`<b>${MON[+m.slice(5)-1]} ${m.slice(0,4)}</b><br><span class="k" style="background:var(--nino)"></span>Niño3.4 ${n?sgn(n[1],2):'–'}<br><span class="k" style="background:var(--aqua)"></span>DMI ${d?sgn(d[1],2):'not yet published'}`, e);
+  });
+  ie.querySelector('#ix-hit').addEventListener('mouseleave', hideTip);
+}
+
+// ---------- filters ----------
+function renderFilters(){
+  const fs = document.getElementById('f-season');
+  fs.innerHTML = [...cols].reverse().map(c=>`<option value="${c.s}|${c.y}">${c.s} ${c.y}</option>`).join('');
+  fs.onchange = () => { const [s,y]=fs.value.split('|'); state.season={s, y:+y}; save(); update(); };
+  const ft = document.getElementById('f-station');
+  const grp = (net, lbl) => `<optgroup label="${lbl}">` + S.filter(s=>s.net===net).sort((a,b)=>a.name.localeCompare(b.name)).map(s=>`<option value="${s.code}">${esc(s.name)}</option>`).join('') + '</optgroup>';
+  ft.innerHTML = grp('Gauge','Rain gauges') + grp('AWS','Weather stations (AWS)');
+  ft.onchange = () => { state.code = ft.value; save(); update(); };
+  const fl = document.getElementById('f-layer');
+  fl.onchange = () => { state.layer = fl.value; save(); update(); };
+}
+function renderLegend(){
+  const el = document.getElementById('map-legend');
+  const shapes = `<span><i class="sw" style="border-radius:50%;background:var(--muted)"></i>Gauge</span><span><i class="sw" style="background:var(--muted);border-radius:1px"></i>AWS</span>`;
+  if (state.layer==='gefs') el.innerHTML = ML.map((l,i)=>`<span><i class="sw" style="background:var(--s${i})"></i>${l}</span>`).join('') + shapes;
+  else el.innerHTML = PL.map((l,i)=>`<span><i class="sw" style="background:var(--d${i})"></i>${l}</span>`).join('') + `<span><i class="sw hollow"></i>No value</span>` + shapes;
+}
+
+// ---------- map ----------
+const LON0=40.4, LON1=51.8, LAT0=-2.0, LAT1=12.4, MW=460;
+const MH = Math.round(MW*(LAT1-LAT0)/(LON1-LON0));
+const px = lon => (lon-LON0)/(LON1-LON0)*MW, py = lat => (LAT1-lat)/(LAT1-LAT0)*MH;
+const rasterCache = {};
+function raster(kind){
+  const key = kind + (document.documentElement.getAttribute('data-theme')||'') + matchMedia('(prefers-color-scheme: dark)').matches;
+  if (rasterCache[key]) return rasterCache[key];
+  const g = D.grids[kind==='gefs'?'gefs':'elnino'];
+  const cv = document.createElement('canvas'); cv.width=g.w; cv.height=g.h;
+  const ctx = cv.getContext('2d'); const img = ctx.createImageData(g.w,g.h);
+  const pal = (kind==='gefs'?[0,1,2,3,4,5].map(i=>css('--s'+i)):[0,1,2,3,4,5,6].map(i=>css('--d'+i))).map(h=>{ const n=parseInt(h.slice(1),16); return [n>>16&255,n>>8&255,n&255]; });
+  g.v.forEach((v,i)=>{ if (v<0) return; const c = pal[kind==='gefs'?mcls(v):pcls(v)]; img.data.set([c[0],c[1],c[2],200], i*4); });
+  ctx.putImageData(img,0,0);
+  const x = px(g.x0), y = py(g.y0), w = px(g.x0+g.w*g.dx)-x, h = py(g.y0+g.h*g.dy)-y;
+  return rasterCache[key] = `<image href="${cv.toDataURL()}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="none" style="image-rendering:pixelated"/>`;
+}
+function mapValue(st){
+  if (state.layer==='deyr26') return st.seas5 && st.seas5.pct!=null ? {c:`var(--d${pcls(st.seas5.pct)})`, t:`Deyr 2026 (SEAS5): <b>${fmt(st.seas5.mm)} mm</b>, ${fmt(st.seas5.pct)}% of model normal<br>Oct ${fmt(st.seas5.months[0])} · Nov ${fmt(st.seas5.months[1])} · Dec ${fmt(st.seas5.months[2])} mm`} : null;
+  if (state.layer==='gefs') return st.gefs16!=null ? {c:`var(--s${mcls(st.gefs16)})`, t:`Next 16 days: <b>${fmt(st.gefs16,0)} mm</b>`} : null;
+  const r = seasonRow(st, state.season.y, state.season.s);
+  if (!r) return null;
+  if (r.pct==null) return r.zero ? {c:null, t:`${state.season.s} ${state.season.y}: 0 mm while nearby gauges had rain. Check the gauge`} : null;
+  return {c:`var(--d${pcls(r.pct)})`, t:`${state.season.s} ${state.season.y}: <b>${fmt(r.P)} mm</b>, ${fmt(r.pct)}% of normal (${fmt(r.norm)} mm)`};
+}
+function renderMap(){
+  const path = poly => 'M'+poly.map(([x,y])=>`${px(x).toFixed(1)},${py(y).toFixed(1)}`).join('L')+'Z';
+  const img = WX && state.ov.img;
+  const nb = ['ETH','KEN','DJI'].flatMap(k=>(D.shapes[k]||[]).map(p=>img ? `<path d="${path(p)}" fill="none" stroke="#fff" stroke-opacity=".35"/>` : `<path d="${path(p)}" fill="var(--land-n)" stroke="var(--land-edge)"/>`)).join('');
+  const so = ['SOM','SOL'].flatMap(k=>(D.shapes[k]||[]).map(p=>img ? `<path d="${path(p)}" fill="none" stroke="#fff" stroke-opacity=".8" stroke-width="1.2"/>` : `<path d="${path(p)}" fill="var(--land)" stroke="var(--land)" stroke-width="1.2"/>`)).join('');
+  const base = img ? `<image href="${WX.imagery}" x="0" y="0" width="${MW}" height="${MH}" preserveAspectRatio="none"/>` : '';
+  const wxl = WX ? `<image id="field-img" x="0" y="0" width="${MW}" height="${MH}" preserveAspectRatio="none" visibility="hidden" style="pointer-events:none"/><image id="cloud-img" x="0" y="0" width="${MW}" height="${MH}" preserveAspectRatio="none" visibility="hidden" style="pointer-events:none"/><g id="wx-tc">${state.ov.tc ? tcSvg() : ''}</g><g id="wx-barb" style="pointer-events:none"></g><g id="wx-probe"></g>` : '';
+  const clip = `<clipPath id="som-clip">${['SOM','SOL'].flatMap(k=>(D.shapes[k]||[]).map(p=>`<path d="${path(p)}"/>`)).join('')}</clipPath>`;
+  const ras = state.layer==='season' || (WX && state.field) ? '' : `<g clip-path="url(#som-clip)" opacity="${WX && state.ov.img ? .7 : 1}">${raster(state.layer)}</g>`;
+  const LEFT = new Set(['AWS_BOORAMA','AWS_WGABU','AWS_DOLOOW','AWS_KISMAYO','AWS_QARDHO','AWS_BADHAN','AWS_GALKACYO','AWS_HUDUR','AWS_GURICEEL']);
+  const vis = S.filter(s=>s.lat!=null).sort((a,b)=>(a.code===state.code)-(b.code===state.code) || (a.net==='AWS')-(b.net==='AWS'));
+  const dots = vis.map(st=>{
+    const v = mapValue(st), x = px(st.lon), y = py(st.lat), sel = st.code===state.code;
+    const fill = v && v.c ? v.c : 'var(--land)', stroke = v && v.c ? 'var(--surface)' : 'var(--muted)';
+    const shape = st.net==='AWS'
+      ? `<rect x="${x-5}" y="${y-5}" width="10" height="10" rx="1.5" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`
+      : `<circle cx="${x}" cy="${y}" r="4.5" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`;
+    const lbl = (st.net==='AWS' || sel) ? `<text x="${LEFT.has(st.code)?x-9:x+9}" y="${y+4}" text-anchor="${LEFT.has(st.code)?'end':'start'}" style="${sel?'fill:var(--ink);font-weight:600':''}">${esc(st.name)}</text>` : '';
+    return `<g class="stn" data-code="${st.code}" tabindex="${sel?0:-1}" role="button" aria-label="${esc(label(st))}"><circle cx="${x}" cy="${y}" r="9" fill="transparent"/>${sel?`<circle cx="${x}" cy="${y}" r="9.5" fill="none" stroke="var(--ink)" stroke-width="2"/>`:''}${shape}${lbl}</g>`;
+  }).join('');
+  const m = document.getElementById('map');
+  const sea = img ? 'fill:#fff;opacity:.7' : 'fill:var(--muted)';
+  m.innerHTML = `<svg viewBox="0 0 ${MW} ${MH}" role="img" aria-label="Station map">${clip}${base}${nb}${so}${ras}${wxl}
+    <text x="${px(42.6)}" y="${py(-1.2)}" style="font:600 11px var(--sans);${sea};letter-spacing:.1em">INDIAN OCEAN</text>
+    <text x="${px(46.3)}" y="${py(12.0)}" style="font:600 11px var(--sans);${sea};letter-spacing:.1em">GULF OF ADEN</text>${dots}</svg>`;
+  if (WX){ paintField(); paintClouds(); bindTc(m); paintBarbs(); renderProbe(); }
+  const {y,s:sn} = state.season;
+  const T = {deyr26:['Deyr 2026 forecast','Dots: ECMWF SEAS5 Oct–Dec rainfall as % of the model\'s own normal (51 members, run of September 2026). Background: CHIRPS Deyr rainfall in the five El Niño years since 1981, as % of normal.'],
+    gefs:[`Rain forecast from ${fmtDs(D.grids.gefs_start)}, 16 days`, 'CHIRPS3-GEFS: NOAA GEFS ensemble forecast, bias-corrected to CHIRPS v3, 5 km. Dots show the value at each station.'],
+    season:[`${sn} ${y}, % of normal`, 'Each station\'s season total against the CHIRPS v3 1991–2020 normal at that point. Only seasons with 80% of days recorded are coloured.']}[state.layer];
+  document.getElementById('map-title').textContent = T[0];
+  document.getElementById('map-note').textContent = T[1] + ' Click a station for detail.';
+  m.querySelectorAll('.stn').forEach(g=>{
+    const st = byCode[g.dataset.code], v = mapValue(st);
+    const html = () => `<b>${esc(label(st))}</b>${st.region?' · '+esc(st.region):''}<br>${v?v.t:'No value for this layer'}<br>${status(st)[1]}${windAt(st.lon,st.lat,'<br>Wind ')}`;
+    g.addEventListener('mousemove', e=>{ e.stopPropagation(); showTip(html(),e); }); g.addEventListener('mouseleave', hideTip);
+    const pick = () => { state.code = st.code; save(); update(); };
+    g.addEventListener('click', pick); g.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); pick(); }});
+  });
+}
+
+// ---------- weather overlays ----------
+// Animated wind, observed clouds on one timeline, cyclone tracks, satellite basemap and a 3D
+// terrain view, after God's Eye View (github.com/bilawalsidhu/gods-eye-view, MIT). Every layer
+// is baked in by fetch_wx.py because the page cannot fetch at view time.
+const HR = 36e5;
+const unb64 = (s, T) => { const b = atob(s), u = new Uint8Array(b.length); for (let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); return new T(u.buffer); };
+const parseUTC = s => Date.parse(s.slice(0,16)+':00Z');
+const COMPASS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const fmtLL = (lat,lon) => `${Math.abs(lat).toFixed(1)}° ${lat>=0?'N':'S'}, ${lon.toFixed(1)}° E`;
+let T0 = 0, TMIN = 0, TMAX = 0;                 // timeline hours, relative to the latest satellite frame
+const WM = {};                                   // decoded wind per model
+if (WX){
+  const fr = WX.clouds.frames;
+  T0 = fr.length ? parseUTC(fr[fr.length-1].t) : parseUTC(WX.built);
+  for (const [k,m] of Object.entries(WX.wind.models)) WM[k] = {t0:parseUTC(m.t0), n:m.n, u:unb64(m.u,Int8Array), v:unb64(m.v,Int8Array), p:m.p?unb64(m.p,Uint8Array):null, t:m.t?unb64(m.t,Int8Array):null};
+  const ws = Object.values(WM);
+  TMIN = Math.max(fr.length ? Math.round((parseUTC(fr[0].t)-T0)/HR) : 0, ...ws.map(m=>Math.ceil((m.t0-T0)/HR)));
+  TMAX = Math.min(...ws.map(m=>Math.floor((m.t0+(m.n-1)*WX.wind.step_h*HR-T0)/HR)));
+  state.t = Math.max(TMIN, Math.min(TMAX, state.t));
+}
+
+// wind field at state.t, interpolated in time once per change
+let FU = null, FV = null, fieldKey = '', fieldMax = 0;
+function prepField(){
+  const key = state.model+'|'+state.t;
+  if (key===fieldKey) return !!FU;
+  fieldKey = key; FU = null;
+  const m = WM[state.model], g = WX.wind, P = g.nx*g.ny;
+  if (!m || m.n<2) return false;
+  const ft = (T0+state.t*HR-m.t0)/(g.step_h*HR);
+  if (ft<0 || ft>m.n-1) return false;
+  const a = Math.min(m.n-2, Math.floor(ft)), w = ft-a;
+  FU = new Float32Array(P); FV = new Float32Array(P); fieldMax = 0;
+  for (let i=0;i<P;i++){
+    FU[i] = (m.u[a*P+i]*(1-w)+m.u[(a+1)*P+i]*w)*g.scale;
+    FV[i] = (m.v[a*P+i]*(1-w)+m.v[(a+1)*P+i]*w)*g.scale;
+    fieldMax = Math.max(fieldMax, Math.hypot(FU[i],FV[i]));
+  }
+  return true;
+}
+function uv(lon, lat){
+  const g = WX.wind, fx = (lon-g.lon0)/g.d, fy = (lat-g.lat0)/g.d;
+  if (!FU || fx<0 || fy<0 || fx>=g.nx-1 || fy>=g.ny-1) return null;
+  const x = fx|0, y = fy|0, ax = fx-x, ay = fy-y, i = y*g.nx+x, j = i+g.nx;
+  return [(FU[i]*(1-ax)+FU[i+1]*ax)*(1-ay)+(FU[j]*(1-ax)+FU[j+1]*ax)*ay,
+          (FV[i]*(1-ax)+FV[i+1]*ax)*(1-ay)+(FV[j]*(1-ax)+FV[j+1]*ax)*ay];
+}
+function windAt(lon, lat, prefix){
+  if (!WX || !state.ov.wind || lon==null || !prepField()) return '';
+  const w = uv(lon, lat); if (!w) return '';
+  const from = (Math.atan2(-w[0], -w[1])*180/Math.PI+360)%360;
+  return `${prefix}<b>${spd(Math.hypot(w[0],w[1]))}</b> from ${COMPASS[Math.round(from/22.5)%16]}`;
+}
+
+// particles: each frame fades the canvas a little and advances every particle along the field
+const wcv = document.getElementById('wind'), wcx = wcv.getContext('2d');
+const RM = matchMedia('(prefers-reduced-motion: reduce)');
+let parts = [], wraf = 0, mapVisible = true, windInk = '#000';
+const SPD = 0.0025;                              // degrees per frame per m/s
+const spawn = p => { p.lon = LON0+Math.random()*(LON1-LON0); p.lat = LAT0+Math.random()*(LAT1-LAT0); p.age = Math.random()*60|0; return p; };
+function sizeWind(){
+  const r = wcv.getBoundingClientRect(), d = Math.min(2, devicePixelRatio||1);
+  const w = Math.round(r.width*d), h = Math.round(r.height*d);
+  if (wcv.width!==w || wcv.height!==h){ wcv.width = w; wcv.height = h; }
+  return wcv.width/MW;
+}
+function stepParticles(k, buckets){
+  for (const p of parts){
+    const w = uv(p.lon, p.lat);
+    if (!w || p.age>80){ spawn(p); p.age = 0; continue; }
+    const sp = Math.hypot(w[0], w[1]);
+    const nl = p.lon + w[0]*SPD/Math.cos(p.lat*Math.PI/180), nt = p.lat + w[1]*SPD;
+    buckets[Math.min(3, sp/4|0)].push(px(p.lon)*k, py(p.lat)*k, px(nl)*k, py(nt)*k);
+    p.lon = nl; p.lat = nt; p.age++;
+  }
+}
+function strokeBuckets(k, buckets){
+  wcx.lineWidth = 1.15*k; wcx.lineCap = 'round'; wcx.strokeStyle = windInk;
+  buckets.forEach((b,i)=>{
+    if (!b.length) return;
+    wcx.globalAlpha = [.3,.5,.75,1][i]; wcx.beginPath();
+    for (let j=0;j<b.length;j+=4){ wcx.moveTo(b[j],b[j+1]); wcx.lineTo(b[j+2],b[j+3]); }
+    wcx.stroke();
+  });
+  wcx.globalAlpha = 1;
+}
+function windFrame(){
+  wraf = 0;
+  const on = WX && state.ov.wind && state.view==='2d' && prepField();
+  if (!on){ wcx.clearRect(0,0,wcv.width,wcv.height); return; }
+  const k = sizeWind();
+  if (parts.length!==1400) parts = Array.from({length:1400}, ()=>spawn({}));
+  if (RM.matches){
+    // reduced motion: one still frame of short streamlines
+    wcx.clearRect(0,0,wcv.width,wcv.height);
+    const buckets = [[],[],[],[]];
+    for (let s=0;s<14;s++) stepParticles(k, buckets);
+    strokeBuckets(k, buckets);
+    return;
+  }
+  wcx.globalCompositeOperation = 'destination-in'; wcx.fillStyle = 'rgba(0,0,0,.92)'; wcx.fillRect(0,0,wcv.width,wcv.height);
+  wcx.globalCompositeOperation = 'source-over';
+  const buckets = [[],[],[],[]];
+  stepParticles(k, buckets); strokeBuckets(k, buckets);
+  if (mapVisible && !document.hidden) wraf = requestAnimationFrame(windFrame);
+}
+const kickWind = () => { if (!wraf) wraf = requestAnimationFrame(windFrame); };
+const restartWind = () => { wcx.clearRect(0,0,wcv.width,wcv.height); parts = []; kickWind(); };
+RM.addEventListener?.('change', restartWind);
+document.addEventListener('visibilitychange', kickWind);
+new IntersectionObserver(es=>{ mapVisible = es[0].isIntersecting; kickWind(); }).observe(document.getElementById('mapbox'));
+new ResizeObserver(()=>{ if (WX && state.ov.wind) restartWind(); }).observe(document.getElementById('mapbox'));
+
+// clouds: IR frames are stored as white + alpha and tinted to the theme here
+const tintCache = {};
+function cloudFrame(){
+  if (!WX || !state.ov.cloud || state.t>0) return -1;
+  const fr = WX.clouds.frames, ta = T0+state.t*HR;
+  let best = -1, bd = Infinity;
+  fr.forEach((f,i)=>{ const d = Math.abs(parseUTC(f.t)-ta); if (d<bd){ bd = d; best = i; } });
+  return bd<=HR ? best : -1;
+}
+const cloudInk = () => state.ov.img ? '#ffffff' : css('--cloud');
+function tinted(i, color, done){
+  const key = i+'|'+color, c = tintCache[key];
+  if (c) return c.ready ? c : null;
+  const e = tintCache[key] = {ready:false};
+  const im = new Image();
+  im.onload = () => {
+    const cv = document.createElement('canvas'); cv.width = im.width; cv.height = im.height;
+    const x = cv.getContext('2d'); x.drawImage(im,0,0);
+    x.globalCompositeOperation = 'source-in'; x.fillStyle = color; x.fillRect(0,0,cv.width,cv.height);
+    e.canvas = cv; e.url = cv.toDataURL('image/png'); e.ready = true; done && done();
+  };
+  im.src = WX.clouds.frames[i].src;
+  return null;
+}
+function paintClouds(){
+  const el = document.getElementById('cloud-img'); if (!el) return;
+  const i = cloudFrame();
+  if (i<0){ el.setAttribute('visibility','hidden'); return; }
+  const c = tinted(i, cloudInk(), paintClouds);
+  if (c){ el.setAttribute('href', c.url); el.setAttribute('visibility','visible'); }
+}
+const preloadClouds = () => WX.clouds.frames.forEach((f,i)=>tinted(i, cloudInk()));
+
+// cyclones, in the categories of RSMC New Delhi (IMD), which warns for this basin
+const TC = [[90,'Extremely severe cyclonic storm or stronger','--tc-su'],[64,'Very severe cyclonic storm','--tc-vs'],[34,'Cyclonic storm','--tc-cs'],[-1,'Depression','--muted']];
+const tcCat = kt => TC.find(c=>(kt??0)>c[0]);
+function tcSvg(){
+  let s = '', hit = '';
+  WX.cyclones.forEach((c,ci)=>{
+    const P = c.p.map(([lo,la,w])=>[px(lo).toFixed(1), py(la).toFixed(1), w]);
+    for (let i=1;i<P.length;i++){
+      const cat = tcCat(P[i][2]);
+      s += `<line x1="${P[i-1][0]}" y1="${P[i-1][1]}" x2="${P[i][0]}" y2="${P[i][1]}" stroke="var(${cat[2]})" stroke-width="${c.land?2.4:1.3}" stroke-linecap="round" opacity="${c.land?1:.75}"/>`;
+    }
+    hit += `<path class="tc-hit" data-i="${ci}" d="M${P.map(p=>p[0]+','+p[1]).join('L')}" fill="none" stroke="transparent" stroke-width="10" style="pointer-events:stroke;cursor:help"/>`;
+    if (c.land && c.name!=='Unnamed'){
+      const inx = c.p.filter(([lo,la])=>lo>LON0&&lo<LON1-0.3&&la>LAT0&&la<LAT1);
+      const q = inx[inx.length-1];
+      if (q) s += `<text x="${px(q[0])+5}" y="${py(q[1])-5}" style="font:600 11px var(--sans);fill:var(--ink);paint-order:stroke;stroke:var(--surface);stroke-width:3px">${esc(c.name)} ${c.y}</text>`;
+    }
+  });
+  (WX.active||[]).forEach(a=>{
+    const obs = a.track.filter(p=>!p[2]), fc = a.track.filter(p=>p[2]);
+    const d = arr => 'M'+arr.map(p=>`${px(p[0]).toFixed(1)},${py(p[1]).toFixed(1)}`).join('L');
+    if (obs.length>1) s += `<path d="${d(obs)}" fill="none" stroke="var(--tc-su)" stroke-width="3"/>`;
+    if (fc.length) s += `<path d="${d([...obs.slice(-1), ...fc])}" fill="none" stroke="var(--tc-su)" stroke-width="2.5" stroke-dasharray="5 4"/>`;
+    s += `<circle cx="${px(a.lon)}" cy="${py(a.lat)}" r="6" fill="var(--tc-su)" stroke="var(--surface)" stroke-width="2"/><text x="${px(a.lon)+9}" y="${py(a.lat)+4}" style="font:600 12px var(--sans);fill:var(--ink);paint-order:stroke;stroke:var(--surface);stroke-width:3px">${esc(a.name)}, active</text>`;
+  });
+  return s + hit;
+}
+function bindTc(root){
+  root.querySelectorAll('.tc-hit').forEach(h=>{
+    const c = WX.cyclones[+h.dataset.i], cat = tcCat(c.vmax);
+    h.addEventListener('mousemove', e=>showTip(`<b>${esc(c.name)}, ${c.y}</b><br>Formed ${fmtD(c.start)}<br>Peak wind ${c.vmax!=null?fmt(c.vmax)+' kt':'not recorded'} · ${cat[1]}<br>${c.land?'Crossed the Somali coast':`Closest approach ${fmt(c.km)} km from the coast`}`, e));
+    h.addEventListener('mouseleave', hideTip);
+  });
+}
+
+// timeline: past 24 h of satellite clouds, then the wind forecast, on one scale
+const tl = {box:document.getElementById('tl'), r:document.getElementById('tl-t'), lbl:document.getElementById('tl-lbl'), play:document.getElementById('tl-play'), timer:0};
+function renderTimeline(){
+  const need = WX && ((state.ov.wind || state.field) && state.view==='2d' || state.ov.cloud);
+  tl.box.hidden = !need;
+  if (!need){ stopPlay(); return; }
+  tl.r.min = TMIN; tl.r.max = TMAX; tl.r.value = state.t;
+  const d = new Date(T0+state.t*HR), hh = String(d.getUTCHours()).padStart(2,'0'), eat = String((d.getUTCHours()+3)%24).padStart(2,'0');
+  const rel = state.t===0 ? 'latest satellite image' : state.t<0 ? `${-state.t} h ago, observed` : `+${state.t} h, forecast`;
+  const extra = [];
+  if (state.ov.cloud && state.t>0) extra.push('clouds are observed, so they stop at the latest image');
+  if (state.ov.wind && state.view==='2d' && !prepField()) extra.push(`no ${state.model.toUpperCase()} wind for this hour`);
+  tl.lbl.innerHTML = `<b>${DOW[d.getUTCDay()]} ${d.getUTCDate()} ${MON[d.getUTCMonth()]}, ${hh}:00 UTC</b> (${eat}:00 in Mogadishu) · ${rel}${extra.length?' · '+extra.join(' · '):''}`;
+}
+function setT(t){
+  state.t = Math.max(TMIN, Math.min(TMAX, Math.round(t)));
+  prepField(); paintField(); paintClouds(); paintBarbs(); renderProbe(); renderTimeline(); kickWind();
+  if (G && state.view==='3d') globeClouds();
+}
+function stopPlay(){ clearInterval(tl.timer); tl.timer = 0; tl.play.textContent = 'Play'; }
+tl.play.addEventListener('click', ()=>{
+  if (tl.timer) return stopPlay();
+  if (state.t>=TMAX) setT(TMIN);
+  tl.play.textContent = 'Pause';
+  tl.timer = setInterval(()=>{ if (state.t>=TMAX) return stopPlay(); setT(state.t + (state.t<0 ? 2 : 3)); }, 450);
+});
+tl.r.addEventListener('input', ()=>setT(+tl.r.value));
+document.getElementById('tl-now').addEventListener('click', ()=>{ stopPlay(); setT(0); });
+
+// readout under the cursor, like GEV's reading at map centre
+const rd = document.getElementById('wx-read');
+document.getElementById('mapbox').addEventListener('mousemove', e=>{
+  const sv = document.querySelector('#map svg'); if (!WX || !sv) return;
+  const q = svgPoint(sv, e), lon = LON0+q.x/MW*(LON1-LON0), lat = LAT1-q.y/MH*(LAT1-LAT0);
+  rd.innerHTML = fmtLL(lat, lon) + windAt(lon, lat, ' · wind ') + fieldAt(lon, lat);
+  rd.hidden = false;
+});
+document.getElementById('mapbox').addEventListener('mouseleave', ()=>{ rd.hidden = true; });
+
+function renderWxNote(){
+  const el = document.getElementById('wx-note');
+  if (!WX){ el.textContent = ''; return; }
+  const out = [];
+  const built = WX.built.replace('T',' ');
+  if (state.ov.wind) out.push(`<b>Wind:</b> ${MODEL_NAME[state.model]} 10 m wind via Open-Meteo on a 0.5° grid, fetched ${built} UTC. Brighter trails are faster${FU?`; strongest in view ${fmt(fieldMax,1)} m/s`:''}. From June to September the Somali Jet runs up this coast from the south-west; in the Deyr it weakens and turns.${state.view==='3d'?' Wind animates on the Map view.':''}`);
+  if (state.ov.cloud) out.push(`<b>Clouds:</b> Meteosat Indian Ocean infrared 10.8 µm (EUMETSAT), ${WX.clouds.frames.length} images every 2 h. Brighter means colder, higher cloud tops; bright compact blobs are thunderstorms.`);
+  if (state.ov.tc){
+    const L = WX.cyclones.filter(c=>c.land);
+    out.push(`<b>Cyclone tracks:</b> IBTrACS v4. ${WX.cyclones.length} North Indian Ocean storms since 1980 came within 300 km of Somalia; ${L.length} crossed the coast (${L.map(c=>`${esc(c.name)} ${c.y}`).join(', ')}). ` +
+      '<br>' + TC.map(c=>`<span style="white-space:nowrap;margin-right:12px"><i class="ln" style="background:var(${c[2]})"></i>${c[1]}</span>`).join('') + '<br>' +
+      ((WX.active||[]).length ? `<b>Active now (GDACS):</b> ${WX.active.map(a=>esc(a.name)).join(', ')}.` : 'No active storm in the basin at build time (GDACS).'));
+  }
+  if (state.ov.img || state.view==='3d') out.push(`<b>Basemap:</b> Sentinel-2 cloudless 2016 by EOX IT Services (CC BY 4.0, contains modified Copernicus Sentinel data).`);
+  if (state.view==='3d') out.push(`<b>3D:</b> elevation from AWS Terrain Tiles (SRTM and other open sources), averaged to 0.1°, heights ×30. Columns show the current map layer at each station; drag to orbit, click a column to open the station.`);
+  el.innerHTML = out.join('<br>');
+}
+
+// overlay and view controls
+function syncControls(){
+  for (const k of Object.keys(OVK)) document.getElementById('o-'+k).checked = state.ov[k];
+  const mdl = document.getElementById('o-model'); mdl.value = state.model; mdl.disabled = !state.ov.wind && !state.field;
+  mdl.querySelector('option[value="aifs"]').hidden = !WM.aifs;
+  document.getElementById('o-field').value = state.field;
+  document.getElementById('o-unit').value = state.unit;
+  document.querySelectorAll('.seg button[data-view]').forEach(b=>b.setAttribute('aria-pressed', b.dataset.view===state.view));
+}
+for (const k of Object.keys(OVK)){
+  document.getElementById('o-'+k).addEventListener('change', e=>{
+    state.ov[k] = e.target.checked; save();
+    if (k==='img' || k==='tc'){ windInk = state.ov.img ? '#ffffff' : css('--wind'); renderMap(); restartWind(); }
+    if (k==='cloud'){ if (state.ov.cloud) preloadClouds(); paintClouds(); }
+    if (k==='wind') restartWind();
+    if (k==='barb') paintBarbs();
+    renderWx();
+  });
+}
+document.getElementById('o-model').addEventListener('change', e=>{ state.model = e.target.value; save(); fieldKey=''; restartWind(); paintField(); renderWx(); });
+document.getElementById('o-unit').addEventListener('change', e=>{ state.unit = e.target.value; save(); renderWx(); renderProbe(); });
+document.getElementById('o-field').addEventListener('change', e=>{ state.field = e.target.value; save(); renderMap(); renderWx(); });
+document.querySelectorAll('.seg button[data-view]').forEach(b=>b.addEventListener('click', ()=>{ state.view = b.dataset.view; save(); applyView(); renderWx(); }));
+function applyView(){
+  const three = WX && state.view==='3d';
+  document.getElementById('mapbox').hidden = three;
+  document.getElementById('globe').hidden = !three;
+  if (three) ensureGlobe().then(updateGlobe, ()=>{}); else kickWind();
+}
+function renderWx(){
+  if (!WX) return;
+  windInk = state.ov.img ? '#ffffff' : css('--wind');
+  syncControls(); prepField(); renderTimeline(); renderWxNote(); renderFieldLegend(); kickWind();
+  if (G && state.view==='3d') updateGlobe();
+}
+if (!WX){ ['ovl','tl'].forEach(id=>document.getElementById(id).hidden = true); document.querySelector('.seg button[data-view]').parentElement.hidden = true; }
+
+// ---------- 3D terrain (three.js, loaded on first use) ----------
+// World units are degrees: x = lon, z = -lat (north is -z), y = height in degrees x EX.
+const THREE_SRC = ['https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js', 'https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js'];
+const EX = 30, CX = (LON0+LON1)/2, CY = (LAT0+LAT1)/2;
+let G = null, globeP = null;
+const loadScript = src => new Promise((ok,no)=>{ const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = ()=>no(new Error(src)); document.head.appendChild(s); });
+function ensureGlobe(){
+  if (globeP) return globeP;
+  const box = document.getElementById('globe');
+  box.innerHTML = '<div class="msg">Loading 3D terrain…</div>';
+  globeP = THREE_SRC.reduce((p,src)=>p.then(()=>loadScript(src)), Promise.resolve()).then(buildGlobe).catch(err=>{
+    box.innerHTML = '<div class="msg">The 3D view could not load its graphics library. Check your connection, then switch to Map and back to try again.</div>';
+    globeP = null; throw err;
+  });
+  return globeP;
+}
+function ground(lon, lat){
+  const t = WX.terrain, ix = Math.round((lon-LON0)/0.1), iy = Math.round((LAT1-lat)/0.1);
+  if (ix<0 || iy<0 || ix>=t.nx || iy>=t.ny) return 0;
+  return G.z[iy*t.nx+ix]/111000*EX;
+}
+function buildGlobe(){
+  const T = THREE, box = document.getElementById('globe');
+  box.innerHTML = '';
+  const R = new T.WebGLRenderer({antialias:true, alpha:true});
+  R.setPixelRatio(Math.min(2, devicePixelRatio||1)); R.outputEncoding = T.sRGBEncoding;
+  box.appendChild(R.domElement);
+  const hint = document.createElement('div'); hint.className = 'hint'; hint.textContent = 'Drag to orbit · scroll to zoom · right-drag to pan'; box.appendChild(hint);
+  const scene = new T.Scene(), cam = new T.PerspectiveCamera(38, 1, 0.05, 200);
+  cam.position.set(2.5, 11, 12);
+  const ctl = new T.OrbitControls(cam, R.domElement);
+  ctl.enableDamping = true; ctl.maxPolarAngle = Math.PI*0.46; ctl.minDistance = 2; ctl.maxDistance = 40; ctl.target.set(0,0,0.5);
+  const tr = WX.terrain, z = unb64(tr.z, Uint16Array);
+  G = {T, R, scene, cam, ctl, z, box, cols:new T.Group(), overlay:new T.Group(), clouds:null, ptr:null};
+  const geo = new T.PlaneGeometry(LON1-LON0, LAT1-LAT0, tr.nx-1, tr.ny-1);
+  geo.rotateX(-Math.PI/2);                      // plane rows run north to south, like the elevation grid
+  const pos = geo.attributes.position;
+  for (let i=0;i<pos.count;i++) pos.setY(i, z[i]/111000*EX);
+  geo.computeVertexNormals();
+  const tex = new T.TextureLoader().load(WX.imagery); tex.encoding = T.sRGBEncoding; tex.anisotropy = 4;
+  scene.add(new T.Mesh(geo, new T.MeshLambertMaterial({map:tex})));
+  scene.add(new T.AmbientLight(0xffffff, 0.72));
+  const sun = new T.DirectionalLight(0xffffff, 0.62); sun.position.set(-4, 5, -3); scene.add(sun);   // north-west light, as in a hillshade
+  scene.add(G.cols, G.overlay);
+  const ray = new T.Raycaster(), ndc = new T.Vector2();
+  const pick = e => { const r = R.domElement.getBoundingClientRect(); ndc.set((e.clientX-r.left)/r.width*2-1, -(e.clientY-r.top)/r.height*2+1); ray.setFromCamera(ndc, cam); const h = ray.intersectObjects(G.cols.children, false)[0]; return h && h.object.userData.code ? byCode[h.object.userData.code] : null; };
+  R.domElement.addEventListener('pointermove', e=>{
+    const st = pick(e);
+    R.domElement.style.cursor = st ? 'pointer' : 'grab';
+    if (st){ const v = mapValue(st); showTip(`<b>${esc(label(st))}</b>${st.region?' · '+esc(st.region):''}<br>${v?v.t:'No value for this layer'}`, e); } else hideTip();
+  });
+  R.domElement.addEventListener('pointerleave', hideTip);
+  R.domElement.addEventListener('pointerdown', e=>{ G.ptr = [e.clientX, e.clientY]; });
+  R.domElement.addEventListener('pointerup', e=>{
+    if (!G.ptr || Math.hypot(e.clientX-G.ptr[0], e.clientY-G.ptr[1])>5) return;
+    const st = pick(e); if (st){ state.code = st.code; save(); update(); }
+  });
+  const fit = () => { const w = box.clientWidth, h = box.clientHeight; if (!w || !h) return; R.setSize(w, h, false); cam.aspect = w/h; cam.updateProjectionMatrix(); };
+  new ResizeObserver(fit).observe(box); fit();
+  const loop = () => { if (state.view==='3d' && !document.hidden){ ctl.update(); R.render(scene, cam); } requestAnimationFrame(loop); };
+  loop();
+}
+function colValue(st){
+  if (state.layer==='deyr26') return st.seas5 && st.seas5.pct!=null ? {h:st.seas5.pct/100, c:`--d${pcls(st.seas5.pct)}`} : null;
+  if (state.layer==='gefs') return st.gefs16!=null ? {h:st.gefs16/60, c:`--s${mcls(st.gefs16)}`} : null;
+  const r = seasonRow(st, state.season.y, state.season.s);
+  return r && r.pct!=null ? {h:r.pct/100, c:`--d${pcls(r.pct)}`} : null;
+}
+function clearGroup(g){ while (g.children.length){ const o = g.children.pop(); o.geometry?.dispose(); o.material?.map?.dispose(); o.material?.dispose(); } }
+function updateGlobe(){
+  if (!G) return;
+  const T = G.T;
+  clearGroup(G.cols);
+  for (const st of S){
+    if (st.lat==null) continue;
+    const v = colValue(st), sel = st.code===state.code;
+    const h = v ? Math.min(3, Math.max(0.04, v.h*0.9)) : 0.04, r = st.net==='AWS' ? 0.07 : 0.055;
+    const geo = st.net==='AWS' ? new T.BoxGeometry(r*1.6, h, r*1.6) : new T.CylinderGeometry(r, r, h, 12);
+    const m = new T.Mesh(geo, new T.MeshLambertMaterial({color:new T.Color(v ? css(v.c) : css('--muted'))}));
+    const y0 = ground(st.lon, st.lat);
+    m.position.set(st.lon-CX, y0+h/2, -(st.lat-CY)); m.userData.code = st.code;
+    G.cols.add(m);
+    if (sel){
+      const ring = new T.Mesh(new T.TorusGeometry(0.16, 0.025, 8, 32), new T.MeshBasicMaterial({color:new T.Color(css('--ink'))}));
+      ring.rotation.x = Math.PI/2; ring.position.set(st.lon-CX, y0+h+0.06, -(st.lat-CY));
+      G.cols.add(ring);
+    }
+  }
+  clearGroup(G.overlay); G.clouds = null;
+  if (state.ov.tc) for (const c of WX.cyclones){
+    const pts = c.p.map(([lo,la])=>new T.Vector3(lo-CX, ground(lo,la)+0.05, -(la-CY)));
+    G.overlay.add(new T.Line(new T.BufferGeometry().setFromPoints(pts), new T.LineBasicMaterial({color:new T.Color(css(tcCat(c.vmax)[2])), transparent:true, opacity:c.land?1:.6})));
+  }
+  globeClouds();
+}
+function globeClouds(){
+  if (!G) return;
+  const T = G.T, i = cloudFrame();
+  if (G.clouds){ G.overlay.remove(G.clouds); G.clouds.material.map?.dispose(); G.clouds.material.dispose(); G.clouds.geometry.dispose(); G.clouds = null; }
+  if (i<0) return;
+  const c = tinted(i, '#ffffff', globeClouds);
+  if (!c) return;
+  const tex = new T.CanvasTexture(c.canvas); tex.encoding = T.sRGBEncoding;
+  const p = new T.Mesh(new T.PlaneGeometry(LON1-LON0, LAT1-LAT0), new T.MeshBasicMaterial({map:tex, transparent:true, depthWrite:false, opacity:.9}));
+  p.rotation.x = -Math.PI/2; p.position.y = 1.1;
+  G.clouds = p; G.overlay.add(p);
+}
+
+// ---------- forecast fields on the map (Windy / Ventusky style colour layers) ----------
+const FIELD = {
+  rain3:  {name:'Rain in the 3 hours to this time', short:'rain 3 h', unit:'mm', br:[0.2,1,2,5,10,20], tok:'--s', dry:true, lbl:['0.2–1','1–2','2–5','5–10','10–20','> 20 mm']},
+  rain24: {name:'Rain in the 24 hours from this time', short:'rain 24 h', unit:'mm', br:[1,5,10,25,50,100], tok:'--s', dry:true, lbl:['1–5','5–10','10–25','25–50','50–100','> 100 mm']},
+  temp:   {name:'Temperature at 2 m', short:'temperature', unit:'°C', br:[15,20,25,30,35,40], tok:'--h', lbl:['< 15','15–20','20–25','25–30','30–35','35–40','> 40 °C']},
+  wspd:   {name:'Wind speed at 10 m', short:'wind speed', unit:'m/s', br:[2,4,6,8,10,12], tok:'--w', lbl:['< 2','2–4','4–6','6–8','8–10','10–12','> 12 m/s']},
+};
+const MODEL_NAME = {gfs:'NOAA GFS', ecmwf:'ECMWF IFS', aifs:'ECMWF AIFS (machine learning)'};
+const fcls = (F, v) => { const n = F.br.filter(b=>v>=b).length; return F.dry ? n-1 : n; };   // -1 = leave transparent
+// bilinear sample of one time slice; NaN when any corner is missing
+function sampleAt(arr, off, lon, lat, scale, miss){
+  const g = WX.wind, fx = (lon-g.lon0)/g.d, fy = (lat-g.lat0)/g.d;
+  if (fx<0 || fy<0 || fx>=g.nx-1 || fy>=g.ny-1) return NaN;
+  const x = fx|0, y = fy|0, ax = fx-x, ay = fy-y, i = off+y*g.nx+x, j = i+g.nx;
+  const a = arr[i], b = arr[i+1], c = arr[j], d = arr[j+1];
+  if (miss!=null && (a===miss || b===miss || c===miss || d===miss)) return NaN;
+  return ((a*(1-ax)+b*ax)*(1-ay) + (c*(1-ax)+d*ax)*ay)*scale;
+}
+let FG = null, fgKey = '';
+function fieldGrid(){
+  const key = state.field+'|'+state.model+'|'+state.t;
+  if (key===fgKey) return FG;
+  fgKey = key; FG = null;
+  const m = WM[state.model], g = WX.wind, P = g.nx*g.ny;
+  if (!m || !state.field) return null;
+  const ft = (T0+state.t*HR-m.t0)/(g.step_h*HR);
+  if (ft<0 || ft>m.n-1) return null;
+  const a = Math.min(m.n-2, Math.floor(ft)), w = ft-a, s0 = Math.round(ft), out = new Float32Array(P);
+  if (state.field==='wspd'){ if (!prepField()) return null; for (let i=0;i<P;i++) out[i] = Math.hypot(FU[i], FV[i]); }
+  else if (state.field==='temp'){
+    if (!m.t) return null;
+    for (let i=0;i<P;i++){ const x = m.t[a*P+i], y = m.t[(a+1)*P+i]; out[i] = x===-128 || y===-128 ? NaN : (x*(1-w)+y*w)*g.t_scale; }
+  } else if (state.field==='rain3'){
+    if (!m.p) return null;
+    for (let i=0;i<P;i++){ const x = m.p[s0*P+i]; out[i] = x===255 ? NaN : x*g.p_scale; }
+  } else {
+    if (!m.p || s0+8>m.n-1) return null;           // the eight 3 h totals after this time
+    for (let i=0;i<P;i++){ let t = 0; for (let k=1;k<=8;k++){ const x = m.p[(s0+k)*P+i]; if (x===255){ t = NaN; break; } t += x; } out[i] = t*g.p_scale; }
+  }
+  return FG = out;
+}
+const fieldCanvas = document.createElement('canvas');
+fieldCanvas.width = 230; fieldCanvas.height = Math.round(230*MH/MW);
+const hexRGB = h => { const n = parseInt(h.replace('#','').padEnd(6,'0'),16); return [n>>16&255, n>>8&255, n&255]; };
+function paintField(){
+  const el = document.getElementById('field-img'); if (!el) return;
+  const G_ = state.field && state.view==='2d' ? fieldGrid() : null;
+  if (!G_){ el.setAttribute('visibility','hidden'); return; }
+  const F = FIELD[state.field], pal = Array.from({length:7}, (_,i)=>hexRGB(css(F.tok+i) || '#000000'));
+  const W_ = fieldCanvas.width, H_ = fieldCanvas.height, ctx = fieldCanvas.getContext('2d'), img = ctx.createImageData(W_, H_);
+  for (let y=0;y<H_;y++){
+    const lat = LAT1-(y+.5)/H_*(LAT1-LAT0);
+    for (let x=0;x<W_;x++){
+      const v = sampleAt(G_, 0, LON0+(x+.5)/W_*(LON1-LON0), lat, 1);
+      if (isNaN(v)) continue;
+      const k = fcls(F, v); if (k<0) continue;
+      const c = pal[F.dry ? k : k], o = (y*W_+x)*4;
+      img.data[o] = c[0]; img.data[o+1] = c[1]; img.data[o+2] = c[2]; img.data[o+3] = F.dry ? 205 : 170;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  el.setAttribute('href', fieldCanvas.toDataURL()); el.setAttribute('visibility','visible');
+}
+function fieldAt(lon, lat){
+  if (!WX || !state.field) return '';
+  const G_ = fieldGrid(); if (!G_) return '';
+  const v = sampleAt(G_, 0, lon, lat, 1);
+  return isNaN(v) ? '' : ` · ${FIELD[state.field].short} <b>${state.field==='wspd' ? spd(v) : fmt(v,1)+' '+FIELD[state.field].unit}</b>`;
+}
+function renderFieldLegend(){
+  const el = document.getElementById('field-lg');
+  el.hidden = !(WX && state.field && state.view==='2d');
+  if (el.hidden) return;
+  const F = FIELD[state.field], ok = !!fieldGrid();
+  el.innerHTML = `<b>${F.name}</b> · ${MODEL_NAME[state.model]}` + (ok ? (state.field==='wspd' ? [`< ${spd(F.br[0])}`, ...F.br.slice(0,-1).map((b,i)=>`${fmt(b*UNIT[state.unit][0])}–${spd(F.br[i+1])}`), `> ${spd(F.br[F.br.length-1])}`] : F.lbl).map((l,i)=>`<span><i class="sw" style="background:var(${F.tok}${i})"></i>${l}</span>`).join('') : ' · not available at this hour') + '<span class="muted">Station dots keep the map layer.</span>';
+}
+
+// ---------- station forecast: daily totals from each model's grid ----------
+const MCOL = {gfs:'var(--rain)', ecmwf:'var(--aqua)', aifs:'var(--ink2)'};
+const dayKey = ms => new Date(ms+3*HR).toISOString().slice(0,10);           // Somali local day (UTC+3)
+function stationDaily(st){
+  const g = WX.wind, P = g.nx*g.ny, days = [];
+  for (let k=0;k<7;k++) days.push(dayKey(T0+k*24*HR));
+  const out = {};
+  for (const [k,m] of Object.entries(WM)){
+    if (!m.p) continue;
+    const rain = Array(7).fill(0), n = Array(7).fill(0), tx = Array(7).fill(-Infinity);
+    for (let s=0;s<m.n;s++){
+      const ms = m.t0 + s*g.step_h*HR;
+      if (ms<=T0) continue;                                  // only rain still to come
+      const i = days.indexOf(dayKey(ms-1)); if (i<0) continue; // a total ending at midnight belongs to the day before
+      const v = sampleAt(m.p, s*P, st.lon, st.lat, g.p_scale, 255);
+      if (!isNaN(v)){ rain[i] += v; n[i]++; }
+      const t = sampleAt(m.t, s*P, st.lon, st.lat, g.t_scale, -128);
+      if (!isNaN(t)) tx[i] = Math.max(tx[i], t);
+    }
+    out[k] = days.map((d,i)=>({d, rain: n[i] ? rain[i] : null, n: n[i], tx: isFinite(tx[i]) ? tx[i] : null}));
+  }
+  return {days, models: out};
+}
+function renderStFc(st){
+  const wrap = document.getElementById('st-fc-wrap');
+  wrap.hidden = !WX || st.lat==null;
+  if (wrap.hidden) return;
+  const {days, models} = stationDaily(st), ks = Object.keys(models);
+  document.getElementById('st-fc-title').textContent = 'Next 7 days here, by model';
+  document.getElementById('st-fc-legend').innerHTML = ks.map(k=>`<span><i class="sw" style="background:${MCOL[k]}"></i>${MODEL_NAME[k].replace(' (machine learning)',' (AI)')}</span>`).join('');
+  const W=640, H=205, L=44, R=10, T=16, B=44, pw=W-L-R, ph=H-T-B;
+  let max = 5; ks.forEach(k=>models[k].forEach(o=>{ if (o.rain!=null) max = Math.max(max, o.rain); }));
+  const ticks = ticksCover(max*1.1); max = ticks[ticks.length-1];
+  const gw = pw/7, bw = Math.min(16, (gw-10)/ks.length), Y = v => T+ph-v/max*ph;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Rain forecast for the next 7 days at this station">`;
+  ticks.forEach(t=>{ s += `<line x1="${L}" x2="${L+pw}" y1="${Y(t)}" y2="${Y(t)}" stroke="${t?'var(--grid)':'var(--axis)'}"/><text x="${L-6}" y="${Y(t)+4}" text-anchor="end">${t}</text>`; });
+  s += `<text x="${L-6}" y="${T-5}" text-anchor="end" style="font-size:11px">mm</text>`;
+  days.forEach((d,i)=>{
+    const x0 = L+i*gw+(gw-bw*ks.length)/2, dd = new Date(d+'T00:00:00Z');
+    ks.forEach((k,j)=>{ const o = models[k][i]; if (o.rain==null || o.rain<0.05) return; const h = Math.max(1.5, ph-(Y(o.rain)-T)); s += `<rect x="${x0+j*bw+0.5}" y="${T+ph-h}" width="${bw-1}" height="${h}" rx="2" fill="${MCOL[k]}"/>`; });
+    const txs = ks.map(k=>models[k][i].tx).filter(v=>v!=null);
+    s += `<text x="${L+i*gw+gw/2}" y="${T+ph+16}" text-anchor="middle" style="fill:var(--ink2)">${i===0?'Today':DOW[dd.getUTCDay()]+' '+dd.getUTCDate()}</text>`;
+    if (txs.length) s += `<text x="${L+i*gw+gw/2}" y="${T+ph+32}" text-anchor="middle" style="fill:var(--eto);font-weight:600">${fmt(med(txs))}°</text>`;
+  });
+  s += `<text x="${L-6}" y="${T+ph+32}" text-anchor="end" style="font-size:11px;fill:var(--eto)">max</text>`;
+  s += `<rect id="sf-hit" x="${L}" y="${T}" width="${pw}" height="${ph+B-8}" fill="transparent"/></svg>`;
+  const allDry = ks.every(k=>models[k].every(o=>o.rain==null || o.rain<0.5));
+  const el = document.getElementById('st-fc');
+  el.innerHTML = s + `<p class="muted small">${allDry?'<b style="color:var(--ink2)">All models keep this site dry for the week.</b> ':''}From the 0.5° model grid at this point. Today counts only the rest of the day; days are Somali local time. Bottom row: highest temperature, median of the models.</p>`;
+  const sv = el.querySelector('svg');
+  el.querySelector('#sf-hit').addEventListener('mousemove', e=>{
+    const q = svgPoint(sv, e), i = Math.max(0, Math.min(6, Math.floor((q.x-L)/gw)));
+    showTip(`<b>${fmtD(days[i])}${i===0?' (rest of today)':''}</b>` + ks.map(k=>{ const o = models[k][i]; return `<br><span class="k" style="background:${MCOL[k]}"></span>${MODEL_NAME[k].replace(' (machine learning)',' (AI)')}: <b>${o.rain==null?'–':fmt(o.rain,1)+' mm'}</b>${o.tx!=null?` · max ${fmt(o.tx)} °C`:''}`; }).join(''), e);
+  });
+  el.querySelector('#sf-hit').addEventListener('mouseleave', hideTip);
+}
+
+// ---------- hazard strip (after ICPAC's East Africa Hazards Watch) ----------
+const FC = D.fc || null;
+const pctS = v => `${fmt(v*100)}%`;
+function riverOutlook(r){
+  const i0 = Math.max(0, r.time.findIndex(d=>d>=FC.built.slice(0,10)));
+  const fut = r.q_median.slice(i0).map((v,i)=>[v, r.time[i0+i]]).filter(a=>a[0]!=null);
+  const pk = fut.reduce((a,b)=>b[0]>a[0]?b:a, [0,null]);
+  return {i0, peak:pk[0], date:pk[1], ratio: r.ref2023 && r.ref2023.peak ? pk[0]/r.ref2023.peak : null, now: r.q[i0-1] ?? r.q[i0]};
+}
+// ---------- town forecasts ----------
+const TBINS = {rain:[0.1,0.3,0.5,0.7,0.9], heat:[25,30,34,38,42,46], dust:[50,100,250,600]};
+function renderTowns(){
+  const sec = document.getElementById('towns'); if (!FC){ sec.hidden = true; return; }
+  document.querySelectorAll('.seg button[data-tv]').forEach(b=>b.setAttribute('aria-pressed', b.dataset.tv===state.tv));
+  const tw = FC.towns, v = state.tv, tbl = document.getElementById('towns-tbl');
+  const head = days => '<thead><tr><th></th>' + days.map(d=>{ const dd = new Date(d+'T00:00:00Z'), fri = dd.getUTCDay()===5; return `<th class="${fri?'we':''}">${DOW[dd.getUTCDay()]}<br><span class="${fri?'':'muted'}">${dd.getUTCDate()} ${MON[dd.getUTCMonth()]}</span></th>`; }).join('');
+  const row = t => `<th class="row" data-t="${tw.indexOf(t)}" tabindex="0">${esc(t.name)}<span>${esc(t.region)}</span></th>`;
+  let h = '', sub = '', lg = '';
+  if (v==='rain'){
+    const nd = tw[0].days.filter((d,j)=>tw.some(t=>t.d[j])).length, days = tw[0].days.slice(0, nd);
+    h = head(days) + '<th>50 mm<br><span class="muted">in 3 days</span></th></tr></thead><tbody>' + tw.map((t,ti)=>row(t) + t.d.slice(0, nd).map((o,j)=>{
+      if (!o) return '<td><div class="cell blank">–</div></td>';
+      const k = TBINS.rain.filter(b=>o.pr10>=b).length, txt = o.med>=1 ? fmt(o.med) : o.pr1>=0.5 ? '<1' : '';
+      return `<td><div class="cell${k?'':' blank'}" data-t="${ti}" data-j="${j}" style="${k?`background:var(--s${k});color:var(--st${k})`:''}">${txt||'·'}</div></td>`;
+    }).join('') + `<td><div class="cell${t.pr50_72h>=0.3?'':' blank'}" style="${t.pr50_72h>=0.6?'background:var(--crit);color:#fff':t.pr50_72h>=0.3?'background:var(--warn);color:#3a2a00':''}">${pctS(t.pr50_72h)}</div></td></tr>`).join('') + '</tbody>';
+    sub = `ECMWF ensemble, ${tw[0].n} members, built ${FC.built.replace('T',' ')} UTC. Colour: chance of 10 mm or more that day. Number: median of the members in mm. Days are Somali local days; Friday is marked. Last column: chance of 50 mm or more in any 3 consecutive days, SWALIM's 72-hour window.`;
+    lg = ['10–30%','30–50%','50–70%','70–90%','90% or more'].map((l,i)=>`<span><i class="sw" style="background:var(--s${i+1})"></i>${l}</span>`).join('') + '<span>chance of 10 mm or more</span>';
+  } else if (v==='heat'){
+    const days = tw.find(t=>t.heat).heat.days;
+    h = head(days) + '</tr></thead><tbody>' + tw.map((t,ti)=>row(t) + (t.heat ? t.heat.at.map((a,j)=>{ if (a==null) return '<td><div class="cell blank">–</div></td>'; const k = TBINS.heat.filter(b=>a>=b).length; return `<td><div class="cell" data-t="${ti}" data-j="${j}" style="background:var(--h${k});color:${k>=5||k===0?'#fff':'#2a1a0a'}">${fmt(a)}°</div></td>`; }).join('') : '') + '</tr>').join('') + '</tbody>';
+    sub = 'Highest feels-like (apparent) temperature of the day, which adds humidity and wind to air temperature. Best-match Open-Meteo forecast. On the US heat index scale, about 41 °C and above is dangerous with long exposure; humid coastal towns reach it before the hotter, drier interior.';
+    lg = ['< 25','25–30','30–34','34–38','38–42','42–46','46 °C or more'].map((l,i)=>`<span><i class="sw" style="background:var(--h${i})"></i>${l}</span>`).join('');
+  } else {
+    const days = tw.find(t=>t.dust).dust.days;
+    h = head(days) + '</tr></thead><tbody>' + tw.map((t,ti)=>row(t) + (t.dust ? t.dust.dust.map((a,j)=>{ if (a==null) return '<td><div class="cell blank">–</div></td>'; const k = TBINS.dust.filter(b=>a>=b).length; return `<td><div class="cell${k?'':' blank'}" data-t="${ti}" data-j="${j}" style="${k?`background:var(--h${k+2});color:${k>=3?'#fff':'#2a1a0a'}`:''}">${fmt(a)}</div></td>`; }).join('') : '') + '</tr>').join('') + '</tbody>';
+    sub = 'Highest hourly dust concentration near the ground, µg/m³, from the CAMS global forecast (Copernicus). Dust from the Ogaden and the Gulf of Aden coast peaks in the windy Hagaa; levels above a few hundred are unhealthy for everyone.';
+    lg = ['50–100','100–250','250–600','600 or more'].map((l,i)=>`<span><i class="sw" style="background:var(--h${i+3})"></i>${l}</span>`).join('') + '<span>µg/m³</span>';
+  }
+  tbl.innerHTML = h.replace(/<tr>(<th class="row" data-t="(\d+)")/g, (m, a, i)=>`<tr class="${tw[+i].name===state.town?'sel':''}">${a}`);
+  document.getElementById('towns-sub').textContent = sub;
+  document.getElementById('towns-legend').innerHTML = lg;
+  tbl.querySelectorAll('[data-t]').forEach(c=>{ const pick = () => { state.town = tw[+c.dataset.t].name; renderTowns(); if (document.getElementById('raw-ds').value==='town') renderRaw(); }; c.addEventListener('click', pick); c.addEventListener('keydown', e=>{ if (e.key==='Enter') pick(); }); });
+  renderEps();
+  tbl.querySelectorAll('.cell[data-t]').forEach(c=>{
+    const t = tw[+c.dataset.t], j = +c.dataset.j;
+    c.addEventListener('mousemove', e=>{
+      let html = '';
+      if (v==='rain'){ const o = t.d[j]; html = `<b>${esc(t.name)}, ${fmtD(t.days[j])}</b><br>Chance of rain: 1 mm ${pctS(o.pr1)} · 10 mm ${pctS(o.pr10)} · 30 mm ${pctS(o.pr30)}<br>Median <b>${fmt(o.med,1)} mm</b>; 1 member in 10 above ${fmt(o.p90,1)} mm<br>Highest temperature ${fmt(o.tx)} °C`; }
+      else if (v==='heat'){ const H_ = t.heat; html = `<b>${esc(t.name)}, ${fmtD(H_.days[j])}</b><br>Feels like <b>${fmt(H_.at[j])} °C</b><br>Air ${fmt(H_.tx[j])} °C · humidity ${fmt(H_.rh[j])}%`; }
+      else { const Dd = t.dust; html = `<b>${esc(t.name)}, ${fmtD(Dd.days[j])}</b><br>Dust <b>${fmt(Dd.dust[j])} µg/m³</b><br>PM10 ${fmt(Dd.pm10[j])} µg/m³`; }
+      showTip(html, e);
+    });
+    c.addEventListener('mouseleave', hideTip);
+  });
+}
+document.querySelectorAll('.seg button[data-tv]').forEach(b=>b.addEventListener('click', ()=>{ state.tv = b.dataset.tv; renderTowns(); }));
+
+// ---------- river flow forecast (GloFAS) ----------
+function renderRiversFc(){
+  const grid = document.getElementById('rivers-fc-grid'), head = document.getElementById('rivers-fc');
+  if (!FC){ grid.hidden = head.hidden = true; return; }
+  document.getElementById('rvf-sub').textContent = `GloFAS v4 ensemble via Open-Meteo, m³/s, built ${FC.built.slice(0,10)}. Each gauge uses the nearest model cell on the main channel.`;
+  grid.innerHTML = FC.rivers.map((r,ri)=>{
+    const o = riverOutlook(r), n = r.time.length, ref = r.ref2023 && r.ref2023.peak;
+    const W=320, H=140, L=40, R_=8, T=10, B=18, pw=W-L-R_, ph=H-T-B;
+    const hi = Math.max(10, ...r.q_max.filter(v=>v!=null), ...r.q.slice(0,o.i0).filter(v=>v!=null), ref ? ref*1.05 : 0);
+    const ticks = ticksCover(hi), top = ticks[ticks.length-1];
+    const X = i => L + i/(n-1)*pw, Y = v => T + ph - v/top*ph;
+    const band = (a,b) => { const idx = []; for (let i=Math.max(0,o.i0-1);i<n;i++) if (r[a][i]!=null && r[b][i]!=null) idx.push(i); return idx.length ? 'M'+idx.map(i=>`${X(i).toFixed(1)},${Y(r[b][i]).toFixed(1)}`).join('L')+'L'+idx.reverse().map(i=>`${X(i).toFixed(1)},${Y(r[a][i]).toFixed(1)}`).join('L')+'Z' : ''; };
+    const line = (k,a,b) => { let d = '', pen = false; for (let i=a;i<b;i++){ const v = r[k][i]; if (v==null){ pen = false; continue; } d += (pen?'L':'M')+X(i).toFixed(1)+','+Y(v).toFixed(1); pen = true; } return d; };
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(r.name)} river flow forecast">`;
+    ticks.forEach(t=>{ s += `<line x1="${L}" x2="${L+pw}" y1="${Y(t)}" y2="${Y(t)}" stroke="${t?'var(--grid)':'var(--axis)'}"/><text x="${L-4}" y="${Y(t)+4}" text-anchor="end" style="font-size:10.5px">${t>=1000?fmt(t/1000,t%1000?(t%100?2:1):0)+'k':t}</text>`; });
+    r.time.forEach((d,i)=>{ if (d.endsWith('-01')) s += `<text x="${X(i)}" y="${H-4}" style="font-size:10.5px">${MON[+d.slice(5,7)-1]}</text>`; });
+    s += `<path d="${band('q_min','q_max')}" fill="var(--rain)" opacity=".14"/><path d="${band('q_p25','q_p75')}" fill="var(--rain)" opacity=".35"/>`;
+    if (ref) s += `<line x1="${L}" x2="${L+pw}" y1="${Y(ref)}" y2="${Y(ref)}" stroke="var(--crit)" stroke-dasharray="4 3"/><text x="${L+4}" y="${Y(ref)-4}" style="font-size:10.5px;fill:var(--crit-ink)">2023 peak ${fmt(ref)}</text>`;
+    s += `<line x1="${X(o.i0)}" x2="${X(o.i0)}" y1="${T}" y2="${T+ph}" stroke="var(--axis)"/>`;
+    s += `<path d="${line('q',0,o.i0)}" fill="none" stroke="var(--ink)" stroke-width="1.75"/><path d="${line('q_median',Math.max(0,o.i0-1),n)}" fill="none" stroke="var(--rain)" stroke-width="2"/>`;
+    s += `<rect class="rvf-hit" data-i="${ri}" x="${L}" y="${T}" width="${pw}" height="${ph}" fill="transparent"/></svg>`;
+    const lv = o.ratio>=0.9 ? ['crit','Near 2023 flood flow'] : o.ratio>=0.6 ? ['warn','Rising towards flood flow'] : ['good','Well below 2023 flood flow'];
+    return `<div class="river"><div class="panel-h" style="align-items:center"><h3>${esc(r.name)} <span class="muted small" style="font-family:var(--sans);font-weight:500">${esc((r.river||'').replace(' River',''))}</span></h3><span class="pill ${lv[0]}"><i></i>${lv[1]}</span></div>
+      <div class="lv">${fmt(o.peak)}<small> m³/s peak · ${o.date?fmtDs(o.date):''}</small></div>
+      <div class="small ink2">${o.ratio!=null?`${fmt(o.ratio*100)}% of the model's 2023 peak`:''}${o.now!=null?` · now ${fmt(o.now)} m³/s`:''}</div>
+      <div class="chart">${s}</div></div>`;
+  }).join('');
+  grid.querySelectorAll('.rvf-hit').forEach(h=>{
+    const r = FC.rivers[+h.dataset.i], sv = h.ownerSVGElement, n = r.time.length, o = riverOutlook(r);
+    h.addEventListener('mousemove', e=>{
+      const q = svgPoint(sv, e), i = Math.max(0, Math.min(n-1, Math.round((q.x-40)/(320-48)*(n-1))));
+      showTip(i<o.i0 ? `<b>${esc(r.name)}, ${fmtD(r.time[i])}</b><br>Model flow ${fmt(r.q[i])} m³/s` : `<b>${esc(r.name)}, ${fmtD(r.time[i])}</b><br>Median <b>${fmt(r.q_median[i])} m³/s</b><br>Middle half ${fmt(r.q_p25[i])}–${fmt(r.q_p75[i])}<br>Range ${fmt(r.q_min[i])}–${fmt(r.q_max[i])}`, e);
+    });
+    h.addEventListener('mouseleave', hideTip);
+  });
+}
+
+// ---------- sea state at the ports ----------
+const hsLv = v => v>=4 ? 'crit' : v>=2.5 ? 'serious' : v>=1.25 ? 'warn' : 'good';
+function renderMarine(){
+  const sec = document.getElementById('marine'); if (!FC){ sec.hidden = true; return; }
+  document.getElementById('marine-sub').textContent = 'Daily highest significant wave height, Open-Meteo marine models. In the Hagaa (July–September) the south-west monsoon keeps the Indian Ocean coast rough and small ports close.';
+  document.getElementById('ports').innerHTML = FC.marine.map((p,pi)=>{
+    const W=300, H=150, L=28, R_=6, T=22, B=30, pw=W-L-R_, ph=H-T-B, n = p.days.length;
+    const mx = Math.max(...p.hs.filter(v=>v!=null)), top = Math.max(3, Math.ceil(mx+0.5));
+    const bw = pw/n, Y = v => T+ph-v/top*ph;
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(p.name)} wave forecast">`;
+    for (let v=0; v<=top; v++) s += `<line x1="${L}" x2="${L+pw}" y1="${Y(v)}" y2="${Y(v)}" stroke="${v?'var(--grid)':'var(--axis)'}"/><text x="${L-4}" y="${Y(v)+4}" text-anchor="end" style="font-size:10.5px">${v}</text>`;
+    if (top>=2.5) s += `<line x1="${L}" x2="${L+pw}" y1="${Y(2.5)}" y2="${Y(2.5)}" stroke="var(--serious)" stroke-dasharray="4 3"/>`;
+    p.days.forEach((d,i)=>{
+      const v = p.hs[i], x = L+i*bw, dd = new Date(d+'T00:00:00Z');
+      if (v!=null){ const h = Math.max(1.5, ph-(Y(v)-T)); s += `<rect x="${x+3}" y="${T+ph-h}" width="${bw-6}" height="${h}" rx="2" fill="var(--${hsLv(v)})"/>`; }
+      if (p.sw[i]!=null) s += `<circle cx="${x+bw/2}" cy="${Y(p.sw[i])}" r="2.6" fill="var(--ink)" stroke="var(--surface)" stroke-width="1"/>`;
+      // arrow points where the waves travel (direction given is where they come from)
+      if (p.dir[i]!=null) s += `<g transform="translate(${x+bw/2},${T-11}) rotate(${p.dir[i]+180})"><path d="M0,-6 L3.5,3 L0,1 L-3.5,3 Z" fill="var(--ink2)"/></g>`;
+      s += `<text x="${x+bw/2}" y="${H-14}" text-anchor="middle" style="font-size:10.5px">${DOW[dd.getUTCDay()].slice(0,2)}</text><text x="${x+bw/2}" y="${H-2}" text-anchor="middle" style="font-size:10px;fill:var(--muted)">${p.tp[i]!=null?fmt(p.tp[i])+'s':''}</text>`;
+    });
+    s += `<rect class="mr-hit" data-i="${pi}" x="${L}" y="0" width="${pw}" height="${H}" fill="transparent"/></svg>`;
+    const lv = hsLv(mx);
+    return `<div class="river"><div class="panel-h" style="align-items:center"><h3>${esc(p.name)}</h3><span class="pill ${lv==='serious'?'warn':lv}"><i></i>max ${fmt(mx,1)} m</span></div><div class="chart">${s}</div></div>`;
+  }).join('');
+  document.querySelectorAll('.mr-hit').forEach(h=>{
+    const p = FC.marine[+h.dataset.i], sv = h.ownerSVGElement, n = p.days.length;
+    h.addEventListener('mousemove', e=>{
+      const q = svgPoint(sv, e), i = Math.max(0, Math.min(n-1, Math.floor((q.x-28)/((300-34)/n))));
+      showTip(`<b>${esc(p.name)}, ${fmtD(p.days[i])}</b><br>Waves up to <b>${fmt(p.hs[i],1)} m</b><br>Swell ${fmt(p.sw[i],1)} m · period ${fmt(p.tp[i],1)} s<br>From the ${COMPASS[Math.round(p.dir[i]/22.5)%16]}`, e);
+    });
+    h.addEventListener('mouseleave', hideTip);
+  });
+}
+
+// ---------- units and data age ----------
+const UNIT = {ms:[1,'m/s',1], kmh:[3.6,'km/h',0], kt:[1.943844,'kt',0]};
+const spd = v => fmt(v*UNIT[state.unit][0], UNIT[state.unit][2]) + ' ' + UNIT[state.unit][1];
+function ageBadge(iso){
+  if (!iso) return '';
+  const h = (Date.now() - Date.parse(iso.slice(0,16)+':00Z'))/HR;
+  const txt = h<1 ? 'under 1 h old' : h<48 ? `${Math.round(h)} h old` : `${Math.round(h/24)} days old`;
+  return `<span class="age${h>24?' stale':''}" title="Fetched ${esc(iso.replace('T',' '))} UTC">${txt}${h>24?', refresh due':''}</span>`;
+}
+function copyText(text, okEl){
+  const done = msg => { okEl.textContent = msg; setTimeout(()=>{ okEl.textContent = ''; }, 2500); };
+  const fallback = () => {
+    const ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly',''); ta.style.cssText = 'position:fixed;left:-9999px';
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch(e){}
+    ta.remove(); done(ok ? 'Copied' : 'Copy blocked by the browser; select the text and copy it');
+  };
+  try { navigator.clipboard.writeText(text).then(()=>done('Copied'), fallback); } catch(e){ fallback(); }
+}
+const csvCell = v => v==null || (typeof v==='number' && isNaN(v)) ? '' : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g,'""')}"` : String(v);
+const toCSV = (head, rows) => [head, ...rows].map(r=>r.map(csvCell).join(',')).join('\n');
+
+// ---------- wind barbs (WMO station-model convention, knots) ----------
+// Staff points to where the wind comes from; pennant 50 kt, full barb 10 kt, half barb 5 kt.
+// Barbs sit on the clockwise side of the staff, which flips south of the equator.
+function barbPath(kt, side){
+  let n = Math.round(kt/5)*5, y = -18, d = '';
+  if (n<5) return null;
+  d += 'M0,0L0,-18';
+  const pen = [];
+  while (n>=50){ pen.push(`M0,${y}L${side*8},${y+2.5}L0,${y+5}Z`); y += 6; n -= 50; }
+  if (pen.length) y += 1;
+  while (n>=10){ d += `M0,${y}L${side*8},${y-3}`; y += 3; n -= 10; }
+  if (n>=5){ if (y===-18) y += 3; d += `M0,${y}L${side*4},${y-1.5}`; }
+  return {d, pen: pen.join('')};
+}
+function barbSvg(kt, x, y, from, lat, ink){
+  const b = barbPath(kt, lat<0 ? -1 : 1);
+  if (!b) return `<circle cx="${x}" cy="${y}" r="3" fill="none" stroke="${ink}" stroke-width="1.2"/>`;   // calm
+  return `<g transform="translate(${x.toFixed(1)},${y.toFixed(1)}) rotate(${from.toFixed(0)})"><path d="${b.d}" fill="none" stroke="${ink}" stroke-width="1.3" stroke-linecap="round"/>${b.pen?`<path d="${b.pen}" fill="${ink}"/>`:''}</g>`;
+}
+function paintBarbs(){
+  const g = document.getElementById('wx-barb'); if (!g) return;
+  if (!WX || !state.ov.barb || !prepField()){ g.innerHTML = ''; return; }
+  const ink = state.ov.img ? '#ffffff' : 'var(--ink)';
+  let s = '';
+  for (let lat=Math.ceil(LAT0)+0.5; lat<LAT1; lat+=1) for (let lon=Math.ceil(LON0)+0.5; lon<LON1; lon+=1){
+    const w = uv(lon, lat); if (!w) continue;
+    const ms = Math.hypot(w[0], w[1]), from = (Math.atan2(-w[0], -w[1])*180/Math.PI+360)%360;
+    s += barbSvg(ms*1.943844, px(lon), py(lat), from, lat, ink);
+  }
+  g.innerHTML = s;
+}
+
+// ---------- point forecast: click anywhere on the map (Windy-style picker, meteogram layout) ----------
+function pointSeries(lon, lat){
+  const g = WX.wind, P = g.nx*g.ny, out = {};
+  for (const [k,m] of Object.entries(WM)){
+    const rows = [];
+    for (let s=0;s<m.n;s++){
+      const ms = m.t0 + s*g.step_h*HR;
+      const u = sampleAt(m.u, s*P, lon, lat, g.scale), v = sampleAt(m.v, s*P, lon, lat, g.scale);
+      rows.push({ms, p: m.p ? sampleAt(m.p, s*P, lon, lat, g.p_scale, 255) : NaN, t: m.t ? sampleAt(m.t, s*P, lon, lat, g.t_scale, -128) : NaN,
+        ws: Math.hypot(u, v), wd: (Math.atan2(-u, -v)*180/Math.PI+360)%360});
+    }
+    out[k] = rows;
+  }
+  return out;
+}
+const isoUTC = ms => new Date(ms).toISOString().slice(0,16)+'Z';
+function renderProbe(){
+  const box = document.getElementById('probe');
+  box.hidden = !(WX && state.probe && state.view==='2d');
+  const mk = document.getElementById('wx-probe');
+  if (mk) mk.innerHTML = state.probe && WX ? `<g transform="translate(${px(state.probe.lon)},${py(state.probe.lat)})" style="pointer-events:none"><circle r="7" fill="none" stroke="var(--surface)" stroke-width="4"/><circle r="7" fill="none" stroke="var(--crit)" stroke-width="2"/><path d="M-11,0H-4M4,0H11M0,-11V-4M0,4V11" stroke="var(--crit)" stroke-width="2"/></g>` : '';
+  if (box.hidden) return;
+  const {lat, lon} = state.probe, S_ = pointSeries(lon, lat), ks = Object.keys(S_), sel = S_[state.model] ? state.model : ks[0];
+  document.getElementById('probe-title').textContent = `Point forecast, ${fmtLL(lat, lon)}`;
+  document.getElementById('probe-legend').innerHTML = ks.map(k=>`<span><i class="ln" style="background:${MCOL[k]}"></i>${MODEL_NAME[k].replace(' (machine learning)',' (AI)')} temperature</span>`).join('') + `<span><i class="sw" style="background:${MCOL[sel]}"></i>3 h rain, ${MODEL_NAME[sel].replace(' (machine learning)',' (AI)')}</span><span>Barbs: wind in knots</span>`;
+  const t0 = T0 + TMIN*HR, t1 = T0 + TMAX*HR;
+  const W=480, L=38, R_=10, pw=W-L-R_, X = ms => L + (ms-t0)/(t1-t0)*pw;
+  const rows = [{h:110, k:'t'}, {h:70, k:'p'}, {h:46, k:'w'}], gap = 26;
+  const H = 16 + rows.reduce((a,r)=>a+r.h+gap,0) - gap + 24;
+  const tv = ks.flatMap(k=>S_[k].filter(o=>o.ms>=t0&&o.ms<=t1&&!isNaN(o.t)).map(o=>o.t));
+  const tlo = Math.floor(Math.min(...tv)/5)*5, thi = Math.ceil(Math.max(...tv)/5)*5 || tlo+5;
+  const pv = S_[sel].filter(o=>o.ms>=t0&&o.ms<=t1&&!isNaN(o.p)).map(o=>o.p), pt = ticksCover(Math.max(2, ...pv)), pmax = pt[pt.length-1];
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Meteogram" class="meteo">`, y = 16;
+  // temperature
+  const Yt = v => y + rows[0].h - (v-tlo)/(thi-tlo)*rows[0].h;
+  for (let v=tlo; v<=thi; v+=5) s += `<line x1="${L}" x2="${L+pw}" y1="${Yt(v)}" y2="${Yt(v)}" stroke="var(--grid)"/><text x="${L-5}" y="${Yt(v)+4}" text-anchor="end">${v}°</text>`;
+  ks.forEach(k=>{ let d = '', pen = false; S_[k].forEach(o=>{ if (o.ms<t0||o.ms>t1||isNaN(o.t)){ pen = false; return; } d += (pen?'L':'M')+X(o.ms).toFixed(1)+','+Yt(o.t).toFixed(1); pen = true; }); s += `<path d="${d}" fill="none" stroke="${MCOL[k]}" stroke-width="${k===sel?2.2:1.4}" opacity="${k===sel?1:.75}"/>`; });
+  s += `<text x="${L}" y="${y-6}" style="font-size:11px">temperature, °C</text>`;
+  y += rows[0].h + gap;
+  // rain
+  const Yp = v => y + rows[1].h - v/pmax*rows[1].h, bw = Math.max(1.5, pw/((t1-t0)/(3*HR)) - 1);
+  pt.forEach(v=>{ s += `<line x1="${L}" x2="${L+pw}" y1="${Yp(v)}" y2="${Yp(v)}" stroke="${v?'var(--grid)':'var(--axis)'}"/><text x="${L-5}" y="${Yp(v)+4}" text-anchor="end">${v}</text>`; });
+  S_[sel].forEach(o=>{ if (o.ms<t0||o.ms>t1||isNaN(o.p)||o.p<0.05) return; const h = Math.max(1, rows[1].h-(Yp(o.p)-y)); s += `<rect x="${X(o.ms)-bw}" y="${y+rows[1].h-h}" width="${bw}" height="${h}" fill="${MCOL[sel]}"/>`; });
+  s += `<text x="${L}" y="${y-6}" style="font-size:11px">rain, mm per 3 h</text>`;
+  y += rows[1].h + gap;
+  // barbs every 6 h
+  S_[sel].forEach((o,i)=>{ if (o.ms<t0||o.ms>t1||isNaN(o.ws)||((o.ms/HR+3)%12)) return; s += barbSvg(o.ws*1.943844, X(o.ms), y+rows[2].h/2+4, o.wd, lat, 'var(--ink2)'); });
+  s += `<text x="${L}" y="${y-6}" style="font-size:11px">wind, every 12 h</text>`;
+  y += rows[2].h;
+  // day boundaries (Somali local midnight) and the timeline position
+  for (let ms=Math.ceil((t0+3*HR)/(24*HR))*24*HR-3*HR; ms<=t1; ms+=24*HR){
+    const d = new Date(ms+3*HR);
+    s += `<line x1="${X(ms)}" x2="${X(ms)}" y1="10" y2="${y}" stroke="var(--axis)" stroke-dasharray="2 3"/>` + (X(ms)+24<L+pw ? `<text x="${X(ms)+3}" y="${y+16}">${DOW[d.getUTCDay()].slice(0,2)} ${d.getUTCDate()}</text>` : '');
+  }
+  s += `<line x1="${X(T0+state.t*HR)}" x2="${X(T0+state.t*HR)}" y1="10" y2="${y}" stroke="var(--crit)" stroke-width="1.5"/>`;
+  s += `<rect id="pr-hit" x="${L}" y="10" width="${pw}" height="${y-10}" fill="transparent"/></svg>`;
+  const el = document.getElementById('probe-chart'); el.innerHTML = s;
+  const sv = el.querySelector('svg');
+  el.querySelector('#pr-hit').addEventListener('mousemove', e=>{
+    const q = svgPoint(sv, e), ms = t0 + (q.x-L)/pw*(t1-t0);
+    const i = Math.max(0, Math.min(S_[sel].length-1, Math.round((ms-S_[sel][0].ms)/(3*HR))));
+    const when = S_[sel][i].ms, d = new Date(when+3*HR);
+    showTip(`<b>${DOW[d.getUTCDay()]} ${d.getUTCDate()} ${MON[d.getUTCMonth()]}, ${String(d.getUTCHours()).padStart(2,'0')}:00 EAT</b>` + ks.map(k=>{ const o = S_[k].find(r=>r.ms===when); return o ? `<br><span class="k" style="background:${MCOL[k]}"></span>${MODEL_NAME[k].replace(' (machine learning)',' (AI)')}: ${fmt(o.t,1)} °C · ${fmt(o.p,1)} mm · ${spd(o.ws)} from ${COMPASS[Math.round(o.wd/22.5)%16]}` : ''; }).join(''), e);
+  });
+  el.querySelector('#pr-hit').addEventListener('mouseleave', hideTip);
+  document.getElementById('probe-note').textContent = `Bilinear from the 0.5° grid. Temperature at 2 m from all models; rain and wind barbs from the selected model (change it above the map). Red line: timeline position. Times shown in East Africa Time (UTC+3).`;
+}
+document.getElementById('probe-close').addEventListener('click', ()=>{ state.probe = null; renderProbe(); });
+document.getElementById('probe-csv').addEventListener('click', e=>{
+  const {lat, lon} = state.probe, S_ = pointSeries(lon, lat), ks = Object.keys(S_);
+  const rows = S_[ks[0]].map((o,i)=>[isoUTC(o.ms), ...ks.flatMap(k=>{ const r = S_[k][i]; return r ? [r.t, r.p, r.ws, r.wd].map(v=>isNaN(v)?null:+v.toFixed(2)) : [null,null,null,null]; })]);
+  copyText(toCSV(['time_utc', ...ks.flatMap(k=>[`${k}_air_temperature_degC`, `${k}_precipitation_mm_3h`, `${k}_wind_speed_m_s`, `${k}_wind_from_direction_deg`])], rows), document.getElementById('share-ok'));
+  e.target.textContent = 'Copied'; setTimeout(()=>{ e.target.textContent = 'Copy CSV'; }, 2000);
+});
+document.getElementById('map').addEventListener('click', e=>{
+  if (!WX || e.target.closest('.stn,.tc-hit')) return;
+  const sv = document.querySelector('#map svg'); if (!sv) return;
+  const q = svgPoint(sv, e);
+  state.probe = {lon: +(LON0+q.x/MW*(LON1-LON0)).toFixed(2), lat: +(LAT1-q.y/MH*(LAT1-LAT0)).toFixed(2)};
+  renderProbe();
+});
+
+// ---------- hazards: WMO impact-based colours, CAP 1.2 fields ----------
+// level 0 green (no warning), 1 yellow (be aware), 2 orange (be prepared), 3 red (take action)
+const WMO = [{cls:'good', name:'Green', act:'No warning'}, {cls:'warn', name:'Yellow', act:'Be aware'}, {cls:'serious', name:'Orange', act:'Be prepared'}, {cls:'crit', name:'Red', act:'Take action'}];
+const CAPSEV = ['Minor','Moderate','Severe','Extreme'];
+const lvlOf = (v, a, b, c) => v>=c ? 3 : v>=b ? 2 : v>=a ? 1 : 0;
+let HAZ = [];
+function buildHazards(){
+  const out = [];
+  if (FC){
+    const tw = FC.towns, top = [...tw].sort((a,b)=>b.pr50_72h-a.pr50_72h);
+    const hit = top.filter(t=>t.pr50_72h>=0.3);
+    out.push({id:'towns', title:'Heavy rain', event:'Heavy rain', cat:'Met', lv: lvlOf(top[0].pr50_72h, .3, .5, .7), p: top[0].pr50_72h, places: hit,
+      text: hit.length ? `${hit.length} town${hit.length>1?'s':''} with a 30% or higher chance of 50 mm within 3 days: ${hit.slice(0,4).map(t=>`${t.name} ${pctS(t.pr50_72h)}`).join(', ')}.` : `No town reaches a 30% chance of 50 mm within 3 days. Highest: ${top[0].name}, ${pctS(top[0].pr50_72h)}.`,
+      rule:'Chance of 50 mm or more in 72 h: 30% yellow, 50% orange, 70% red'});
+    const ro = FC.rivers.map(r=>({r, ...riverOutlook(r)})).filter(o=>o.ratio!=null).sort((a,b)=>b.ratio-a.ratio);
+    const fr = D.rivers.map(r=>{ const c = [...r.cur].reverse().find(a=>a[1]!=null && a[1]!=='---'); const I = r.ind||{}; return c ? {name:r.name, v:+c[1], lv: +c[1]>=+I.highRiskLevelVal ? 3 : +c[1]>=+I.moderateRiskLevelVal ? 2 : 0} : null; }).filter(Boolean);
+    const frLv = Math.max(0, ...fr.map(o=>o.lv)), glLv = ro.length ? lvlOf(ro[0].ratio, .6, .8, 1) : 0;
+    const atRisk = fr.filter(o=>o.lv);
+    out.push({id:'rivers-fc', title:'River flooding', event:'Riverine flood', cat:'Met', lv: Math.max(frLv, glLv), p: frLv ? 1 : ro.length ? Math.min(1, ro[0].ratio) : 0, places: ro.filter(o=>o.ratio>=.6).map(o=>({name:o.r.name, lat:o.r.lat, lon:o.r.lon})),
+      text: (atRisk.length ? `Gauges at flood risk now: ${atRisk.map(o=>o.name).join(', ')}. ` : 'All six gauges are below moderate flood risk. ') + (ro.length ? `GloFAS peaks at ${fmt(ro[0].ratio*100)}% of the model's 2023 flood flow (${esc(ro[0].r.name)}, ${fmtDs(ro[0].date)}).` : ''),
+      rule:'GloFAS median vs its 2023 flood peak: 60% yellow, 80% orange, 100% red; FRRIMS moderate level orange, high level red'});
+    const ports = FC.marine.map(p=>({...p, mx: Math.max(...p.hs.filter(v=>v!=null))})).sort((a,b)=>b.mx-a.mx);
+    out.push({id:'marine', title:'High seas', event:'High seas', cat:'Met', lv: lvlOf(ports[0].mx, 2.5, 3.5, 4.5), p: 1, places: ports.filter(o=>o.mx>=2.5),
+      text: ports[0].mx>=2.5 ? `Waves of 2.5 m or more at ${ports.filter(o=>o.mx>=2.5).map(o=>o.name).join(', ')}; highest ${fmt(ports[0].mx,1)} m at ${ports[0].name}.` : `Waves stay under 2.5 m at all eight ports; highest ${fmt(ports[0].mx,1)} m at ${ports[0].name}.`,
+      rule:'Daily highest wave height: 2.5 m yellow, 3.5 m orange, 4.5 m red'});
+    const hot = tw.filter(t=>t.heat).map(t=>({...t, mx: Math.max(...t.heat.at.filter(v=>v!=null))})).sort((a,b)=>b.mx-a.mx);
+    if (hot.length) out.push({id:'towns', tv:'heat', title:'Heat stress', event:'Extreme heat', cat:'Met', lv: lvlOf(hot[0].mx, 40, 43, 46), p: 1, places: hot.filter(o=>o.mx>=40),
+      text: hot[0].mx>=40 ? `Feels-like temperature of 40 °C or more at ${hot.filter(o=>o.mx>=40).map(o=>o.name).join(', ')}; highest ${fmt(hot[0].mx)} °C at ${hot[0].name}.` : `Feels-like temperature stays under 40 °C; highest ${fmt(hot[0].mx)} °C at ${hot[0].name}.`,
+      rule:'Highest feels-like temperature: 40 °C yellow, 43 °C orange, 46 °C red'});
+    const dusty = tw.filter(t=>t.dust).map(t=>({...t, mx: Math.max(0, ...t.dust.dust.filter(v=>v!=null))})).sort((a,b)=>b.mx-a.mx);
+    if (dusty.length) out.push({id:'towns', tv:'dust', title:'Dust', event:'Dust storm', cat:'Env', lv: lvlOf(dusty[0].mx, 250, 600, 1200), p: 1, places: dusty.filter(o=>o.mx>=250),
+      text: dusty[0].mx>=250 ? `Dust of 250 µg/m³ or more at ${dusty.filter(o=>o.mx>=250).map(o=>o.name).join(', ')}; highest ${fmt(dusty[0].mx)} at ${dusty[0].name}.` : `Dust stays under 250 µg/m³; highest ${fmt(dusty[0].mx)} µg/m³ at ${dusty[0].name}.`,
+      rule:'Highest hourly dust: 250 µg/m³ yellow, 600 orange, 1,200 red'});
+  }
+  if (WX){
+    const A = WX.active||[];
+    out.push({id:'maparea', tc:true, title:'Tropical cyclones', event:'Tropical cyclone', cat:'Met', lv: A.length ? 2 : 0, p: A.length ? 1 : 0, places: A.map(a=>({name:a.name, lat:a.lat, lon:a.lon})),
+      text: A.length ? `Active: ${A.map(a=>esc(a.name)).join(', ')}. Tracks are on the map.` : 'No active storm in the North Indian Ocean (GDACS). The Deyr is also the second cyclone season; Gati made landfall in November 2020.',
+      rule:'Any active storm in the basin: orange'});
+  }
+  out.forEach(o=>{ o.sev = CAPSEV[o.lv]; o.cert = o.p>=0.5 ? 'Likely' : o.p>0 ? 'Possible' : 'Unlikely'; o.urg = o.lv ? 'Future' : 'Unknown'; });
+  return out;
+}
+function renderHazards(){
+  HAZ = buildHazards();
+  const el = document.getElementById('hz');
+  el.innerHTML = HAZ.map((o,i)=>`<a class="${WMO[o.lv].cls}" href="#${o.id}" data-i="${i}" title="${esc(o.rule)}"><span class="t">${o.title}<span class="lv">${WMO[o.lv].name} · ${WMO[o.lv].act}</span></span><span>${o.text}</span><span class="cap"><span>Severity <b>${o.sev}</b></span><span>Certainty <b>${o.cert}</b></span><span>Urgency <b>${o.urg}</b></span></span></a>`).join('');
+  el.querySelectorAll('a').forEach(a=>a.addEventListener('click', ()=>{ const o = HAZ[+a.dataset.i]; if (o.tv){ state.tv = o.tv; renderTowns(); } if (o.tc && WX){ state.ov.tc = true; save(); renderMap(); renderWx(); } }));
+  document.getElementById('hz-sub').innerHTML = FC ? `From the forecasts on this page, built ${esc(FC.built.replace('T',' '))} UTC · ${ageBadge(FC.built)}` : 'Forecast data not built';
+  const n = HAZ.filter(o=>o.lv).length;
+  document.getElementById('cap-btn').textContent = `${document.getElementById('cap-box').hidden ? 'Show' : 'Hide'} CAP 1.2 alerts (${n})`;
+}
+const xe = s => String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
+function capXML(){
+  const sent = (FC ? FC.built : new Date().toISOString().slice(0,16)) + ':00+00:00', exp = new Date(Date.parse(sent)+7*24*HR).toISOString().slice(0,19)+'+00:00';
+  const act = HAZ.filter(o=>o.lv);
+  if (!act.length) return `<!-- No hazard at yellow or above for the next 7 days; no CAP alert is generated. -->`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<!-- Unofficial: generated from model forecasts by the Somalia Station Water Balance dashboard. status=Draft so no system treats it as an issued warning. -->\n` + act.map((o,i)=>`<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2">
+  <identifier>SWB-${sent.slice(0,16).replace(/\D/g,'')}-${i+1}</identifier>
+  <sender>swalim-water-balance.dashboard</sender>
+  <sent>${sent}</sent>
+  <status>Draft</status>
+  <msgType>Alert</msgType>
+  <scope>Public</scope>
+  <note>Unofficial model-based outlook. Official warnings come from the Somali Disaster Management Agency and SWALIM.</note>
+  <info>
+    <language>en</language>
+    <category>${o.cat}</category>
+    <event>${xe(o.event)}</event>
+    <responseType>${o.lv>=2?'Prepare':'Monitor'}</responseType>
+    <urgency>${o.urg}</urgency>
+    <severity>${o.sev}</severity>
+    <certainty>${o.cert}</certainty>
+    <onset>${sent}</onset>
+    <expires>${exp}</expires>
+    <senderName>Somalia Station Water Balance (unofficial)</senderName>
+    <headline>${xe(`${WMO[o.lv].name} ${o.event.toLowerCase()} outlook: ${WMO[o.lv].act.toLowerCase()}`)}</headline>
+    <description>${xe(o.text.replace(/<[^>]+>/g,''))}</description>
+    <instruction>${xe(WMO[o.lv].act + '. ' + o.rule + '.')}</instruction>
+    <parameter><valueName>awareness_level</valueName><value>${o.lv+1}; ${WMO[o.lv].name.toLowerCase()}; ${o.sev}</value></parameter>
+    <area>
+      <areaDesc>${xe(o.places.map(p=>p.name).join(', ') || 'Somalia')}</areaDesc>
+${o.places.filter(p=>p.lat!=null).map(p=>`      <circle>${(+p.lat).toFixed(2)},${(+p.lon).toFixed(2)} 25</circle>`).join('\n')}
+    </area>
+  </info>
+</alert>`).join('\n');
+}
+document.getElementById('cap-btn').addEventListener('click', ()=>{
+  const box = document.getElementById('cap-box'); box.hidden = !box.hidden;
+  if (!box.hidden){ document.getElementById('cap-xml').textContent = capXML(); document.getElementById('cap-sub').textContent = 'OASIS Common Alerting Protocol 1.2, one <alert> per hazard at yellow or above, with the awareness_level parameter used by MeteoAlarm. Marked Draft: these are not official warnings.'; }
+  renderHazards();
+});
+document.getElementById('cap-copy').addEventListener('click', ()=>copyText(capXML(), document.getElementById('cap-ok')));
+
+// ---------- EPSgram for the selected town ----------
+function renderEps(){
+  const box = document.getElementById('eps');
+  const t = FC && FC.towns.find(x=>x.name===state.town);
+  box.hidden = !t || state.tv!=='rain';
+  if (box.hidden) return;
+  const nd = t.days.filter((d,j)=>t.d[j]).length, days = t.days.slice(0, nd);
+  document.getElementById('eps-title').textContent = `${t.name}: ensemble rain and highest temperature, ${t.n} members`;
+  const W=640, L=40, R_=10, pw=W-L-R_, gw = pw/nd, H1=150, H2=110, gap=26, H=12+H1+gap+H2+40;
+  const pmax = ticksCover(Math.max(5, ...t.d.slice(0,nd).map(o=>o.max||0))), pm = pmax[pmax.length-1];
+  const txs = t.d.slice(0,nd).flatMap(o=>o.txq||[]).filter(v=>v!=null), tlo = Math.floor(Math.min(...txs)), thi = Math.ceil(Math.max(...txs));
+  const Yp = v => 12+H1-v/pm*H1, Yt = v => 12+H1+gap+H2-(v-tlo)/((thi-tlo)||1)*H2;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ensemble box plots">`;
+  pmax.forEach(v=>{ s += `<line x1="${L}" x2="${L+pw}" y1="${Yp(v)}" y2="${Yp(v)}" stroke="${v?'var(--grid)':'var(--axis)'}"/><text x="${L-5}" y="${Yp(v)+4}" text-anchor="end">${v}</text>`; });
+  s += `<text x="${L}" y="10" style="font-size:11px">Rain, mm per day</text>`;
+  const step = Math.max(1, Math.round((thi-tlo)/4));
+  for (let v=tlo; v<=thi; v+=step) s += `<line x1="${L}" x2="${L+pw}" y1="${Yt(v)}" y2="${Yt(v)}" stroke="var(--grid)"/><text x="${L-5}" y="${Yt(v)+4}" text-anchor="end">${v}°</text>`;
+  s += `<text x="${L}" y="${12+H1+gap-4}" style="font-size:11px">Highest temperature, °C</text>`;
+  const box5 = (cx, q, Y, col) => {   // q = [min, p10, p25, med, p75, p90, max]
+    if (q.some(v=>v==null)) return '';
+    const w1 = Math.min(18, gw*.6), w2 = w1*.5;
+    return `<line x1="${cx}" x2="${cx}" y1="${Y(q[6])}" y2="${Y(q[0])}" stroke="${col}" stroke-width="1"/>`
+      + `<rect x="${cx-w2/2}" y="${Y(q[5])}" width="${w2}" height="${Math.max(0.5, Y(q[1])-Y(q[5]))}" fill="${col}" opacity=".45"/>`
+      + `<rect x="${cx-w1/2}" y="${Y(q[4])}" width="${w1}" height="${Math.max(0.5, Y(q[2])-Y(q[4]))}" fill="${col}" opacity=".85"/>`
+      + `<line x1="${cx-w1/2-2}" x2="${cx+w1/2+2}" y1="${Y(q[3])}" y2="${Y(q[3])}" stroke="var(--ink)" stroke-width="2"/>`;
+  };
+  days.forEach((d,j)=>{
+    const o = t.d[j], cx = L+j*gw+gw/2, dd = new Date(d+'T00:00:00Z');
+    if (o){ s += box5(cx, [o.min,o.p10,o.p25,o.med,o.p75,o.p90,o.max], Yp, 'var(--rain)'); if (o.txq) s += box5(cx, o.txq, Yt, 'var(--eto)'); }
+    s += `<text x="${cx}" y="${H-22}" text-anchor="middle" style="${dd.getUTCDay()===5?'fill:var(--ink);font-weight:600':''}">${DOW[dd.getUTCDay()].slice(0,2)}</text><text x="${cx}" y="${H-8}" text-anchor="middle" style="font-size:10.5px">${dd.getUTCDate()}</text>`;
+  });
+  s += `<rect id="eps-hit" x="${L}" y="0" width="${pw}" height="${H}" fill="transparent"/></svg>`;
+  const el = document.getElementById('eps-chart'); el.innerHTML = s;
+  const sv = el.querySelector('svg');
+  el.querySelector('#eps-hit').addEventListener('mousemove', e=>{
+    const q = svgPoint(sv, e), j = Math.max(0, Math.min(nd-1, Math.floor((q.x-L)/gw))), o = t.d[j];
+    if (!o) return hideTip();
+    showTip(`<b>${esc(t.name)}, ${fmtD(days[j])}</b><br>Rain: median <b>${fmt(o.med,1)} mm</b><br>25–75%: ${fmt(o.p25,1)}–${fmt(o.p75,1)} · 10–90%: ${fmt(o.p10,1)}–${fmt(o.p90,1)}<br>Range ${fmt(o.min,1)}–${fmt(o.max,1)} mm${o.txq?`<br>Highest temperature: median ${fmt(o.txq[3],1)} °C (${fmt(o.txq[1],1)}–${fmt(o.txq[5],1)})`:''}`, e);
+  });
+  el.querySelector('#eps-hit').addEventListener('mouseleave', hideTip);
+}
+
+// ---------- data catalogue and raw values ----------
+function renderCatalog(){
+  const rows = [
+    ['SWALIM rain gauges and weather stations', 'precipitation_amount (mm/day), reference ETo (mm/day)', `${S.length} stations`, `daily, to ${D.asof}`, D.built, 'FAO SWALIM', 'https://climseries.faoswalim.org/'],
+    ['CHIRPS v3', 'precipitation_amount (mm/season)', '0.05°', '1981–2025 seasons', D.built, 'Climate Hazards Center, CC BY 4.0', 'https://www.chc.ucsb.edu/data/chirps3'],
+    ['ECMWF SEAS5 (Open-Meteo)', 'monthly precipitation, anomaly (mm)', 'station points', 'Oct–Dec 2026', D.built, 'ECMWF, CC BY 4.0', 'https://open-meteo.com/en/docs/seasonal-forecast-api'],
+    ['CHIRPS3-GEFS', 'precipitation_amount (mm/16 days)', '0.05°', '16 days', D.built, 'Climate Hazards Center', 'https://data.chc.ucsb.edu/products/CHIRPS-GEFS/'],
+    ['SWALIM FRRIMS', 'river stage (m), flood thresholds', '6 gauges', 'daily, 2025–2026', D.built, 'FAO SWALIM', 'https://frrims.faoswalim.org/'],
+  ];
+  if (WX){
+    rows.push(['Forecast grid: GFS, ECMWF IFS, ECMWF AIFS', 'wind_speed, wind_from_direction (m/s, °), precipitation_amount (mm/3 h), air_temperature (°C)', `0.5°, ${Object.keys(WM).length} models`, '−24 h to +7 days, 3-hourly', WX.built, 'NOAA public domain; ECMWF CC BY 4.0', 'https://open-meteo.com/en/docs']);
+    rows.push(['Meteosat IODC IR 10.8 µm', 'toa_brightness_temperature (shown as cloud opacity)', '~3 km', `past 24 h, 2-hourly (${WX.clouds.frames.length} images)`, WX.built, 'EUMETSAT', 'https://view.eumetsat.int/']);
+    rows.push(['IBTrACS v4, North Indian', 'storm track, max sustained wind (kt)', '6-hourly fixes', `1980–present, ${WX.cyclones.length} storms near Somalia`, WX.built, 'NOAA NCEI', 'https://www.ncei.noaa.gov/products/international-best-track-archive']);
+    rows.push(['GDACS tropical cyclones', 'active storm position and track', 'event', 'current', WX.built, 'GDACS (EC JRC, UN OCHA)', 'https://www.gdacs.org/']);
+    rows.push(['Terrain and imagery', 'surface_altitude (m); Sentinel-2 cloudless mosaic', '0.1°; ~10 m imagery resampled', 'static', WX.built, 'AWS Terrain Tiles (open DEMs); EOX CC BY 4.0', 'https://registry.opendata.aws/terrain-tiles/']);
+  }
+  if (FC){
+    rows.push(['ECMWF IFS ensemble, towns', 'precipitation_amount (mm/day), air_temperature max (°C), percentiles', `${FC.towns.length} towns, ${FC.towns[0].n} members`, `${FC.towns[0].days.length} days`, FC.built, 'ECMWF, CC BY 4.0', 'https://open-meteo.com/en/docs/ensemble-api']);
+    rows.push(['Apparent temperature', 'apparent temperature max (°C), relative humidity (%)', `${FC.towns.length} towns`, '7 days', FC.built, 'Open-Meteo best match', 'https://open-meteo.com/en/docs']);
+    rows.push(['CAMS dust', 'mass_concentration_of_dust (µg/m³), PM10', `${FC.towns.length} towns`, '5 days', FC.built, 'Copernicus Atmosphere Monitoring Service', 'https://open-meteo.com/en/docs/air-quality-api']);
+    rows.push(['GloFAS v4', 'water_volume_transport_in_river_channel (m³/s), ensemble percentiles', `${FC.rivers.length} gauges`, 'past 60 days + 30 days', FC.built, 'Copernicus Emergency Management Service', 'https://open-meteo.com/en/docs/flood-api']);
+    rows.push(['Marine waves', 'sea_surface_wave_significant_height (m), swell, period (s), direction (°)', `${FC.marine.length} ports`, '7 days', FC.built, 'Open-Meteo marine (MeteoFrance, ECMWF, DWD)', 'https://open-meteo.com/en/docs/marine-weather-api']);
+  }
+  document.getElementById('catalog').innerHTML = '<thead><tr><th>Dataset</th><th>Variables and units</th><th>Resolution</th><th>Coverage</th><th>Fetched (UTC)</th><th>Licence or owner</th></tr></thead><tbody>' +
+    rows.map(r=>`<tr><td style="white-space:normal;min-width:180px"><a href="${r[6]}" target="_blank" rel="noopener">${esc(r[0])}</a></td><td style="white-space:normal;min-width:240px" class="ink2">${esc(r[1])}</td><td class="ink2">${esc(r[2])}</td><td class="ink2" style="white-space:normal">${esc(r[3])}</td><td>${esc(String(r[4]).replace('T',' '))}<br>${String(r[4]).includes('T')?ageBadge(r[4]):''}</td><td class="ink2" style="white-space:normal;min-width:160px">${esc(r[5])}</td></tr>`).join('') + '</tbody>';
+}
+const RAW = {
+  point:  {name:'Point forecast (pinned point, else selected station)', need:()=>WX, get(){
+    const st = byCode[state.code], P_ = state.probe || (st.lat!=null ? {lat:st.lat, lon:st.lon} : null); if (!P_) return null;
+    const S_ = pointSeries(P_.lon, P_.lat), ks = Object.keys(S_);
+    return {sub:`${state.probe?'Pinned point':esc(st.name)} at ${fmtLL(P_.lat,P_.lon)}. Bilinear from the 0.5° grid; rain is the 3 hours ending at each time.`,
+      head:['time_utc', ...ks.flatMap(k=>[`${k}_air_temperature_degC`, `${k}_precipitation_mm_3h`, `${k}_wind_speed_m_s`, `${k}_wind_from_direction_deg`])],
+      rows: S_[ks[0]].map((o,i)=>[isoUTC(o.ms), ...ks.flatMap(k=>{ const r = S_[k][i]; return r ? [r.t, r.p, r.ws, r.wd].map(v=>isNaN(v)?null:+v.toFixed(2)) : [null,null,null,null]; })])}; }},
+  town:   {name:'Town ensemble (selected town)', need:()=>FC, get(){
+    const t = FC.towns.find(x=>x.name===state.town) || FC.towns[0];
+    return {sub:`${esc(t.name)}, ECMWF ensemble, ${t.n} members. Days are Somali local days (EAT).`,
+      head:['date_eat','precip_min_mm','precip_p10_mm','precip_p25_mm','precip_median_mm','precip_p75_mm','precip_p90_mm','precip_max_mm','prob_ge_1mm','prob_ge_10mm','prob_ge_30mm','tmax_median_degC'],
+      rows: t.days.map((d,j)=>{ const o = t.d[j]; return o ? [d,o.min,o.p10,o.p25,o.med,o.p75,o.p90,o.max,o.pr1,o.pr10,o.pr30,o.tx] : [d]; })}; }},
+  towns:  {name:'All towns: daily median rain and chance of 10 mm', need:()=>FC, get(){
+    return {sub:'Long format, one row per town and day.', head:['town','region','lat','lon','date_eat','precip_median_mm','prob_ge_10mm','apparent_tmax_degC','dust_max_ug_m3'],
+      rows: FC.towns.flatMap(t=>t.days.map((d,j)=>{ const o = t.d[j]||{}; const hi = t.heat ? t.heat.days.indexOf(d) : -1, di = t.dust ? t.dust.days.indexOf(d) : -1;
+        return [t.name, t.region, t.lat, t.lon, d, o.med, o.pr10, hi>=0 ? t.heat.at[hi] : null, di>=0 ? t.dust.dust[di] : null]; }))}; }},
+  rivers: {name:'River flow, GloFAS (all gauges)', need:()=>FC, get(){
+    return {sub:'m³/s. Past days are the model run on observed weather; future days are ensemble statistics.', head:['gauge','river','lat','lon','date','discharge_m3_s','median_m3_s','p25_m3_s','p75_m3_s','min_m3_s','max_m3_s'],
+      rows: FC.rivers.flatMap(r=>r.time.map((d,i)=>[r.name, r.river, r.lat, r.lon, d, r.q[i], r.q_median[i], r.q_p25[i], r.q_p75[i], r.q_min[i], r.q_max[i]]))}; }},
+  marine: {name:'Port waves (all ports)', need:()=>FC, get(){
+    return {sub:'Daily highest values; direction is where waves come from.', head:['port','lat','lon','date_eat','wave_height_max_m','swell_height_max_m','wave_period_max_s','wave_from_direction_deg'],
+      rows: FC.marine.flatMap(p=>p.days.map((d,i)=>[p.name, p.lat, p.lon, d, p.hs[i], p.sw[i], p.tp[i], p.dir[i]]))}; }},
+  station:{name:'Station daily observations (selected station)', need:()=>true, get(){
+    const st = byCode[state.code], z = series(st);
+    return {sub:`${esc(st.name)} (${st.code}). ETo source: m station sensors, p NASA POWER calibrated.`, head:['date','precipitation_mm','reference_eto_mm','eto_source'],
+      rows: Array.from({length:z.n}, (_,i)=>[diso(z.f+i), z.P(i), z.E(i), (st.Es||'')[i]==='-'?'':(st.Es||'')[i]]).filter(r=>r[1]!=null || r[2]!=null)}; }},
+  ledger: {name:'Season ledger (selected station)', need:()=>true, get(){
+    const st = byCode[state.code];
+    return {sub:`${esc(st.name)}. % of normal against CHIRPS v3 1991–2020.`, head:['year','season','rain_mm','normal_mm','pct_of_normal','eto_mm','p_over_eto','rainy_days','longest_dry_spell_d','onset','days_recorded_frac'],
+      rows: st.seasons.map(r=>[r.y, r.s, r.P, r.norm, r.pct, r.E, r.ratio, r.rainy, r.dry, r.onset, r.cov])}; }},
+  tc:     {name:'Cyclone tracks near Somalia (IBTrACS)', need:()=>WX, get(){
+    return {sub:'6-hourly fixes; wind in knots (USA agency 1-minute where available, else WMO).', head:['storm_id','name','season','fix','lon','lat','wind_kt','crossed_coast'],
+      rows: WX.cyclones.flatMap(c=>c.p.map((p,i)=>[c.sid, c.name, c.y, i, p[0], p[1], p[2], c.land]))}; }},
+};
+function renderRaw(){
+  const sel = document.getElementById('raw-ds');
+  if (!sel.options.length){ sel.innerHTML = Object.entries(RAW).filter(([,r])=>r.need()).map(([k,r])=>`<option value="${k}">${esc(r.name)}</option>`).join(''); sel.addEventListener('change', renderRaw); }
+  const R = RAW[sel.value], d = R && R.get();
+  const tbl = document.getElementById('raw-tbl');
+  if (!d){ tbl.innerHTML = ''; document.getElementById('raw-sub').textContent = 'No values for this selection.'; return; }
+  const MAX = 400;
+  document.getElementById('raw-sub').innerHTML = `${d.sub} ${fmt(d.rows.length)} rows${d.rows.length>MAX?`, first ${MAX} shown; Copy CSV takes them all`:''}.`;
+  tbl.innerHTML = `<thead><tr>${d.head.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>` + d.rows.slice(0, MAX).map(r=>`<tr>${d.head.map((h,i)=>`<td>${r[i]==null?'':esc(r[i])}</td>`).join('')}</tr>`).join('') + '</tbody>';
+}
+document.getElementById('raw-copy').addEventListener('click', ()=>{ const R = RAW[document.getElementById('raw-ds').value], d = R && R.get(); if (d) copyText(toCSV(d.head, d.rows), document.getElementById('raw-ok')); });
+
+// ---------- detail ----------
+function series(st){ const f = dnum(st.d0); return {f, P:i=>st.P[i]==null?null:st.P[i]/10, E:i=>st.E[i]==null?null:st.E[i]/10, n:st.P.length}; }
+function seasonSeries(st, y, sn){
+  const [m0,m1] = SEAS[sn];
+  const a = dnum(`${y}-${String(m0).padStart(2,'0')}-01`);
+  const b = dnum(`${y+(m1===12)}-${String(m1===12?1:m1+1).padStart(2,'0')}-01`) - 1;
+  const z = series(st); const P=[], E=[]; let cp=0, ce=0, nP=0;
+  for (let d=a; d<=b; d++){
+    const i = d-z.f;
+    if (i<0 || i>=z.n || d>dnum(ASOF)) { P.push(null); E.push(null); continue; }
+    const p=z.P(i), e=z.E(i);
+    if (p!=null){ cp+=p; nP++; } if (e!=null) ce+=e;
+    P.push(p!=null?cp:null); E.push(e!=null?ce:null);
+  }
+  return {P, E, n:b-a+1, covP:nP/(b-a+1), nP};
+}
+function renderDetail(){
+  const st = byCode[state.code];
+  document.getElementById('st-name').textContent = st.name;
+  const [k,l] = status(st);
+  document.getElementById('st-pill').innerHTML = `<span class="pill ${k}"><i></i>${l}</span> <span class="pill net">${st.net==='AWS'?'Weather station':'Rain gauge'}</span>`;
+  const place = [st.district, st.region, st.state].filter(Boolean).map(esc).join(', ');
+  document.getElementById('st-facts').innerHTML = `<span class="mono">${st.code}</span>${place?`<span>${place}</span>`:''}<span>Record <b>${fmtD(st.first)}</b> – <b>${fmtD(st.last)}</b></span>` +
+    (st.normal && st.normal.Deyr ? `<span>Normal Gu <b>${fmt(st.normal.Gu)}</b> · Deyr <b>${fmt(st.normal.Deyr)} mm</b></span>` : '');
+  const notes = issues(st).filter(n=>n.long).map(n=>`<p class="note">${n.long}</p>`);
+  document.getElementById('st-note').innerHTML = notes.join('');
+  renderStFc(st); renderHist(st); renderCum(st); renderDaily(st);
+}
+function issues(st){
+  const out = [];
+  const zs = st.seasons.filter(r=>r.zero);
+  const obs = st.P.filter(v=>v!=null);
+  if (st.net==='AWS' && obs.length>365 && obs.every(v=>v===0)) out.push({short:'Rain gauge reads 0 every day', long:`The rain gauge has reported 0.0 mm on every day since ${fmtDs(st.d0)} ${st.d0.slice(0,4)}, including wet seasons at nearby stations. It is almost certainly blocked or disconnected.`});
+  else if (zs.length) out.push({short:`0 mm in ${zs.length} season${zs.length>1?'s':''} while nearby had rain`, long:`0 mm recorded in ${zs.map(r=>`${r.s} ${r.y}`).join(', ')} while CHIRPS or the network median showed rain. Likely missing days entered as zeros; those seasons are excluded.`});
+  if (st.status==='Functioning' && silent(st)) out.push({short:'Listed Functioning, but silent', long:`SWALIM lists this station as Functioning, but it has sent no data for ${st.lag} days.`});
+  if (st.xcheck && st.xcheck.ratio && (st.xcheck.ratio>1.6 || st.xcheck.ratio<0.6)) out.push({short:`Rain ${fmt(st.xcheck.ratio,1)}× the gauge ${fmt(st.xcheck.km,0)} km away`, long:`Over ${st.xcheck.pairs.length} shared seasons this station recorded ${fmt(st.xcheck.ratio,1)}× the rain of the manual gauge at ${esc(st.xcheck.gname)}, ${fmt(st.xcheck.km,1)} km away (${st.xcheck.pairs.map(p=>`${p[0]}: ${p[1]} vs ${p[2]} mm`).join('; ')}). Treat this station's rain with caution; the gauge is used for seasonal totals.`});
+  if (st.lat==null) out.push({short:'No coordinates in SWALIM list', long:'SWALIM lists no usable coordinates for this gauge, so it cannot be mapped or given a CHIRPS normal.'});
+  if (st.code==='MRS_SABOD') out.push({short:'Longitude corrected', long:'SWALIM lists this gauge\'s longitude as 4410444. It is read here as 44.10444.'});
+  if (st.net==='AWS' && st.rsFilled>40) out.push({short:'Radiation sensor often reads low or 0'});
+  if (st.rejected) out.push({short:`${st.rejected} impossible values removed`});
+  return out;
+}
+
+function renderHist(st){
+  const sn = state.season.s, el = document.getElementById('hist');
+  const ch = (st.chirps||{})[sn];
+  document.getElementById('hist-title').textContent = `${sn} rainfall at this site, 1981–2026`;
+  document.getElementById('hist-legend').innerHTML = `<span><i class="sw" style="background:var(--prior)"></i>CHIRPS v3</span>${sn==='Deyr'?'<span><i class="sw" style="background:var(--nino)"></i>CHIRPS, El Niño year</span>':''}<span><i class="sw" style="background:var(--ink);border-radius:50%"></i>This station</span><span><i class="ln" style="background:var(--muted)"></i>1991–2020 normal</span>${sn==='Deyr'?'<span><i class="sw" style="background:repeating-linear-gradient(135deg,var(--rain) 0 2px,transparent 2px 4px)"></i>2026 SEAS5</span>':''}`;
+  if (!ch){ el.innerHTML = `<p class="muted small">No CHIRPS history: this station has no usable coordinates.</p>`; return; }
+  const years = []; for (let y=1981; y<=2026; y++) years.push(y);
+  const obs = Object.fromEntries(st.seasons.filter(r=>r.s===sn && r.cov>=0.8 && !r.zero && !r.prog).map(r=>[r.y, r.P]));
+  const nino = Object.fromEntries(D.model.rows.map(r=>[r.y,r.nino]));
+  const f5 = sn==='Deyr' && st.seas5 ? st.seas5.mm : null;
+  let max = Math.max(20, ...ch.filter(v=>v!=null), ...Object.values(obs), f5||0);
+  const ticks = axisTicks(max*1.05); max = ticks[ticks.length-1];
+  const W=640, H=190, L=44, R=10, T=16, B=24, pw=W-L-R, ph=H-T-B, bw = pw/years.length;
+  const X = i => L + i*bw, Y = v => T + ph - v/max*ph;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${sn} rainfall by year">`;
+  ticks.forEach(t=>{ s+=`<line x1="${L}" x2="${L+pw}" y1="${Y(t)}" y2="${Y(t)}" stroke="${t?'var(--grid)':'var(--axis)'}"/><text x="${L-6}" y="${Y(t)+4}" text-anchor="end">${t}</text>`; });
+  s += `<text x="${L-6}" y="${T-5}" text-anchor="end" style="font-size:11px">mm</text>`;
+  years.forEach((y,i)=>{
+    const v = y<=2025 ? ch[i] : null;
+    if (y%5===0) s += `<text x="${X(i)+bw/2}" y="${H-6}" text-anchor="middle">${y}</text>`;
+    if (v!=null && v>0){ const hgt = Math.max(1, ph-(Y(v)-T)); s += `<rect x="${X(i)+1}" y="${T+ph-hgt}" width="${bw-2}" height="${hgt}" rx="2" fill="${sn==='Deyr'&&nino[y]>=1?'var(--nino)':'var(--prior)'}"/>`; }
+    if (y===2026 && f5!=null){ const hgt = Math.max(1, ph-(Y(f5)-T)); s += `<pattern id="hp" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2" height="4" fill="var(--rain)"/></pattern><rect x="${X(i)+1}" y="${T+ph-hgt}" width="${bw-2}" height="${hgt}" rx="2" fill="url(#hp)" stroke="var(--rain)" stroke-width="1"/>`; }
+    if (obs[y]!=null) s += `<circle cx="${X(i)+bw/2}" cy="${Y(Math.min(obs[y],max))}" r="3.5" fill="var(--ink)" stroke="var(--surface)" stroke-width="1.5"/>`;
+  });
+  const nrm = st.normal[sn];
+  if (nrm) s += `<line x1="${L}" x2="${L+pw}" y1="${Y(nrm)}" y2="${Y(nrm)}" stroke="var(--muted)" stroke-width="1.25"/>`;
+  s += `<rect id="h-hit" x="${L}" y="${T}" width="${pw}" height="${ph}" fill="transparent"/></svg>`;
+  el.innerHTML = s;
+  const sv = el.querySelector('svg');
+  el.querySelector('#h-hit').addEventListener('mousemove', e=>{
+    const q = svgPoint(sv,e); const i = Math.max(0,Math.min(years.length-1,Math.floor((q.x-L)/bw))); const y = years[i];
+    let h = `<b>${sn} ${y}</b>`;
+    if (y<=2025) h += `<br>CHIRPS: <b>${fmt(ch[i])} mm</b>${nrm?` (${fmt(ch[i]/nrm*100)}% of normal)`:''}`;
+    if (obs[y]!=null) h += `<br>This station: <b>${fmt(obs[y])} mm</b>`;
+    if (y===2026 && f5!=null) h += `<br>SEAS5 forecast: <b>${fmt(f5)} mm</b> (${fmt(st.seas5.pct)}% of model normal)`;
+    if (sn==='Deyr' && nino[y]!=null) h += `<br>Niño3.4 Sep–Nov ${sgn(nino[y],1)}`;
+    showTip(h, e);
+  });
+  el.querySelector('#h-hit').addEventListener('mouseleave', hideTip);
+}
+
+function renderCum(st){
+  const {y, s:sn} = state.season, el = document.getElementById('cum');
+  const years = [...new Set(st.seasons.filter(r=>r.s===sn && r.y>=+st.d0.slice(0,4)).map(r=>r.y))];
+  const ser = years.map(yy=>({y:yy, ...seasonSeries(st,yy,sn)})).filter(s=>s.covP>=0.5 || s.y===y).slice(-10);
+  const cur = ser.find(s=>s.y===y);
+  document.getElementById('cum-title').textContent = `${sn} ${y} accumulation against other years`;
+  document.getElementById('lg-sel').textContent = `Rain ${y}`;
+  const W=640, H=250, L=44, R=60, T=22, B=24, pw=W-L-R, ph=H-T-B;
+  const n = (cur||ser[0]||{n:91}).n;
+  let max = 10;
+  ser.forEach(s=>s.P.forEach(v=>{ if(v!=null) max=Math.max(max,v); }));
+  if (cur) cur.E.forEach(v=>{ if(v!=null) max=Math.max(max,v); });
+  const nrm = (st.normal||{})[sn]; if (nrm) max = Math.max(max, nrm);
+  const ticks = axisTicks(max*1.05); max = ticks[ticks.length-1];
+  const X = i => L + i/(n-1)*pw, Y = v => T + ph - v/max*ph;
+  const line = arr => { let d='', pen=false; arr.forEach((v,i)=>{ if(v==null){pen=false;return;} d+=(pen?'L':'M')+X(i).toFixed(1)+','+Y(v).toFixed(1); pen=true; }); return d; };
+  const lastPt = arr => { for(let i=arr.length-1;i>=0;i--) if(arr[i]!=null) return [i,arr[i]]; return null; };
+  const [m0] = SEAS[sn];
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Cumulative ${sn} rainfall by year">`;
+  ticks.forEach(t=>{ s += `<line x1="${L}" x2="${L+pw}" y1="${Y(t)}" y2="${Y(t)}" stroke="${t?'var(--grid)':'var(--axis)'}"/><text x="${L-6}" y="${Y(t)+4}" text-anchor="end">${t}</text>`; });
+  s += `<text x="${L-6}" y="${T-10}" text-anchor="end" style="font-size:11px">mm</text>`;
+  [0,1,2].forEach(k=>{ const d=dnum(`${y}-${String(m0+k).padStart(2,'0')}-01`)-dnum(`${y}-${String(m0).padStart(2,'0')}-01`); s += `<line x1="${X(d)}" x2="${X(d)}" y1="${T+ph}" y2="${T+ph+4}" stroke="var(--axis)"/><text x="${X(d)+3}" y="${H-6}">${MON[m0-1+k]}</text>`; });
+  if (nrm) s += `<line x1="${X(n-1)-10}" x2="${X(n-1)+4}" y1="${Y(nrm)}" y2="${Y(nrm)}" stroke="var(--muted)" stroke-width="2"/>`;
+  const labels = [];
+  if (nrm) labels.push({y:Y(nrm), x:X(n-1), t:`normal ${fmt(nrm)}`, c:'var(--muted)'});
+  ser.filter(s=>s.y!==y).forEach(q=>{ s += `<path d="${line(q.P)}" fill="none" stroke="var(--prior)" stroke-width="1.5" stroke-linejoin="round"/>`; const lp = lastPt(q.P); if (lp) labels.push({y:Y(lp[1]), x:X(lp[0]), t:String(q.y), c:'var(--muted)'}); });
+  if (cur){
+    s += `<path d="${line(cur.E)}" fill="none" stroke="var(--eto)" stroke-width="2" stroke-linejoin="round"/><path d="${line(cur.P)}" fill="none" stroke="var(--rain)" stroke-width="2.25" stroke-linejoin="round"/>`;
+    const le = lastPt(cur.E), lp = lastPt(cur.P);
+    if (le){ s += `<circle cx="${X(le[0])}" cy="${Y(le[1])}" r="4" fill="var(--eto)" stroke="var(--surface)" stroke-width="2"/>`; labels.push({y:Y(le[1]), x:X(le[0]), t:`${fmt(le[1])} ET`, c:'var(--ink2)', b:1}); }
+    if (lp){ s += `<circle cx="${X(lp[0])}" cy="${Y(lp[1])}" r="4" fill="var(--rain)" stroke="var(--surface)" stroke-width="2"/>`; labels.push({y:Y(lp[1]), x:X(lp[0]), t:`${fmt(lp[1])} mm`, c:'var(--ink)', b:1}); }
+  }
+  labels.sort((a,b)=>a.y-b.y);
+  for (let i=1;i<labels.length;i++) if (labels[i].y-labels[i-1].y<13) labels[i].y = labels[i-1].y+13;
+  labels.forEach(l=>{ s += `<text x="${Math.min(l.x+7, L+pw+6)}" y="${l.y+4}" style="fill:${l.c};${l.b?'font-weight:600':''}">${l.t}</text>`; });
+  s += `<line id="cx" x1="0" x2="0" y1="${T}" y2="${T+ph}" stroke="var(--axis)" visibility="hidden"/><rect id="c-hit" x="${L}" y="${T}" width="${pw}" height="${ph}" fill="transparent"/>`;
+  if (!cur || cur.nP===0) s += `<text x="${L+pw/2}" y="${T+ph/2}" text-anchor="middle" style="fill:var(--ink2);font-size:14px">No ${sn} ${y} record at this station</text>`;
+  s += `</svg>`;
+  el.innerHTML = s;
+  const sv = el.querySelector('svg'), xl = el.querySelector('#cx');
+  el.querySelector('#c-hit').addEventListener('mousemove', e=>{
+    const q = svgPoint(sv,e); const i = Math.max(0,Math.min(n-1,Math.round((q.x-L)/pw*(n-1))));
+    xl.setAttribute('x1',X(i)); xl.setAttribute('x2',X(i)); xl.setAttribute('visibility','visible');
+    let h = `<b>${fmtDs(diso(dnum(`${y}-${String(m0).padStart(2,'0')}-01`)+i))}</b> · day ${i+1}`;
+    if (cur){ const pv=cur.P[i], ev=cur.E[i]; h += `<br><span class="k" style="background:var(--rain)"></span>Rain ${y}: <b>${pv!=null?fmt(pv)+' mm':'no data'}</b><br><span class="k" style="background:var(--eto)"></span>Ref. ET: <b>${ev!=null?fmt(ev)+' mm':'no data'}</b>`; if (pv!=null&&ev!=null) h += `<br>Deficit: <b>${fmt(ev-pv)} mm</b>`; }
+    ser.filter(q=>q.y!==y).forEach(q=>{ if (q.P[i]!=null) h += `<br><span class="k" style="background:var(--prior)"></span>${q.y}: ${fmt(q.P[i])} mm`; });
+    showTip(h,e);
+  });
+  el.querySelector('#c-hit').addEventListener('mouseleave', ()=>{ xl.setAttribute('visibility','hidden'); hideTip(); });
+}
+
+function renderDaily(st){
+  const el = document.getElementById('daily'), z = series(st);
+  const endN = Math.min(dnum(ASOF), dnum(st.last)), N=120;
+  const days = []; for (let d=endN-N+1; d<=endN; d++){ const i=d-z.f; const ok = i>=0 && i<z.n; days.push({d, p: ok?z.P(i):null, e: ok?z.E(i):null, src: ok?st.Es[i]:'-'}); }
+  document.getElementById('daily-title').textContent = `Daily, ${fmtDs(diso(endN-N+1))} – ${fmtD(diso(endN))}`;
+  const W=640, H=190, L=44, R=16, T=22, B=24, pw=W-L-R, ph=H-T-B;
+  let max = 8; days.forEach(o=>{ if(o.p!=null) max=Math.max(max,o.p); if(o.e!=null) max=Math.max(max,o.e); });
+  const ticks = axisTicks(max*1.05); max = ticks[ticks.length-1];
+  const bw = pw/N, X = i => L+i*bw, Y = v => T+ph-v/max*ph;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Daily rain and reference ET">`;
+  ticks.forEach(t=>{ s += `<line x1="${L}" x2="${L+pw}" y1="${Y(t)}" y2="${Y(t)}" stroke="${t?'var(--grid)':'var(--axis)'}"/><text x="${L-6}" y="${Y(t)+4}" text-anchor="end">${t}</text>`; });
+  s += `<text x="${L-6}" y="${T-10}" text-anchor="end" style="font-size:11px">mm/d</text>`;
+  days.forEach((o,i)=>{
+    if (diso(o.d).slice(8)==='01') s += `<line x1="${X(i)}" x2="${X(i)}" y1="${T+ph}" y2="${T+ph+4}" stroke="var(--axis)"/><text x="${X(i)+3}" y="${H-6}">${MON[+diso(o.d).slice(5,7)-1]}</text>`;
+    if (o.p==null) s += `<rect x="${X(i)}" y="${T}" width="${bw}" height="${ph}" fill="var(--grid)" opacity=".5"/>`;
+    else if (o.p>0){ const h = Math.max(1.5, ph-(Y(o.p)-T)); s += `<rect x="${X(i)+0.5}" y="${T+ph-h}" width="${Math.max(1,bw-1)}" height="${h}" rx="${Math.min(2,bw/2-0.5)}" fill="var(--rain)"/>`; }
+  });
+  let d='', pen=false; days.forEach((o,i)=>{ if(o.e==null){pen=false;return;} d+=(pen?'L':'M')+(X(i)+bw/2).toFixed(1)+','+Y(o.e).toFixed(1); pen=true; });
+  s += `<path d="${d}" fill="none" stroke="var(--eto)" stroke-width="2" stroke-linejoin="round"/><line id="dx" x1="0" x2="0" y1="${T}" y2="${T+ph}" stroke="var(--axis)" visibility="hidden"/><rect id="d-hit" x="${L}" y="${T}" width="${pw}" height="${ph}" fill="transparent"/></svg>`;
+  el.innerHTML = s;
+  const sv = el.querySelector('svg'), xl = el.querySelector('#dx');
+  el.querySelector('#d-hit').addEventListener('mousemove', e=>{
+    const q = svgPoint(sv,e); const i = Math.max(0,Math.min(N-1,Math.floor((q.x-L)/bw))), o = days[i];
+    xl.setAttribute('x1',X(i)+bw/2); xl.setAttribute('x2',X(i)+bw/2); xl.setAttribute('visibility','visible');
+    showTip(`<b>${fmtD(diso(o.d))}</b><br><span class="k" style="background:var(--rain)"></span>Rain: <b>${o.p!=null?fmt(o.p,1)+' mm':'no data'}</b><br><span class="k" style="background:var(--eto)"></span>Ref. ET: <b>${o.e!=null?fmt(o.e,1)+' mm':'no data'}</b>${o.src==='p'?' <span style="opacity:.75">(NASA POWER, calibrated)</span>':o.src==='m'?' <span style="opacity:.75">(station sensors)</span>':''}`, e);
+  });
+  el.querySelector('#d-hit').addEventListener('mouseleave', ()=>{ xl.setAttribute('visibility','hidden'); hideTip(); });
+}
+
+// ---------- ledger ----------
+const pchip = p => p==null ? '<span class="muted">–</span>' : `<span class="chip" style="background:var(--d${pcls(p)});color:var(--dt${pcls(p)})">${fmt(p)}%</span>`;
+function renderLedger(){
+  const st = byCode[state.code], sel = state.season;
+  document.getElementById('ledger-sub').textContent = `${label(st)}. Gu and Deyr, plus every season of ${ASOF.slice(0,4)}, with at least half their days recorded`;
+  const thisYear = +ASOF.slice(0,4);
+  const rows = [...st.seasons].reverse().filter(r=>r.s==='Gu'||r.s==='Deyr'||r.y===thisYear);
+  document.getElementById('ledger').innerHTML = `<thead><tr><th>Season</th><th class="num">Rain mm</th><th class="num">Normal mm</th><th class="num">% of normal</th><th class="num">Ref. ET mm</th><th class="num">P/ETo</th><th class="num">Rainy days</th><th class="num">Longest dry spell</th><th>Onset</th><th class="num">Days recorded</th><th></th></tr></thead><tbody>` +
+    rows.map(r=>`<tr class="${r.y===sel.y&&r.s===sel.s?'sel':''}"><td><b>${r.s}</b> ${r.y}${r.prog?' <span class="muted">(to date)</span>':''}</td>
+      <td class="num">${fmt(r.P)}</td><td class="num">${fmt(r.norm)}</td><td class="num">${r.prog?'<span class="muted">–</span>':pchip(r.pct)}</td><td class="num">${fmt(r.E)}</td><td class="num">${fmt(r.ratio,2)}</td>
+      <td class="num">${r.rainy}</td><td class="num">${r.dry} d</td><td>${r.onset?fmtDs(r.onset):(r.onset===null?'<span class="muted">none</span>':'')}</td><td class="num">${fmt(r.cov*100)}%</td>
+      <td>${r.zero?'<span class="flag">0 mm while nearby had rain: excluded</span>':(r.chirps!=null?`<span class="muted">CHIRPS ${fmt(r.chirps)} mm</span>`:'')}</td></tr>`).join('') + '</tbody>';
+}
+
+// ---------- rivers ----------
+function renderRivers(){
+  const R = D.rivers;
+  const el = document.getElementById('rivers');
+  const last = R.map(r=>r.cur[r.cur.length-1]).filter(Boolean);
+  document.getElementById('rv-sub').textContent = `SWALIM FRRIMS daily gauge readings, latest ${last.length?last[0][0].split('-').reverse().join('-'):''}`;
+  const pd = s => { const [d,m,y] = s.split('-'); return `${y}-${m}-${d}`; };
+  el.innerHTML = R.map((r,ri)=>{
+    const cur = r.cur.map(a=>({d:pd(a[0]), v:a[1]==null||a[1]==='---'?null:+a[1], ltm:a[2]==null?null:+a[2]})).filter(a=>a.d.startsWith('2026'));
+    const prev = r.prev.map(a=>({d:'2026'+pd(a[0]).slice(4), v:+a[1]})).filter(a=>!isNaN(a.v));
+    const I = r.ind || {}, mod = +I.moderateRiskLevelVal, high = +I.highRiskLevelVal, bank = +I.bankFullVal;
+    const lastV = [...cur].reverse().find(a=>a.v!=null);
+    const vals = [...cur.map(a=>a.v), ...prev.map(a=>a.v), ...cur.map(a=>a.ltm), high].filter(v=>v!=null&&!isNaN(v));
+    const lo = Math.floor(Math.min(...vals)), hi = Math.ceil(Math.max(...vals)+0.3);
+    const W=320, H=130, L=28, Rr=8, T=8, B=18, pw=W-L-Rr, ph=H-T-B;
+    const x0 = dnum('2026-01-01'), x1 = dnum('2026-12-31');
+    const X = d => L + (dnum(d)-x0)/(x1-x0)*pw, Y = v => T + (hi-v)/(hi-lo)*ph;
+    const line = (arr,k) => { let s='',pen=false; arr.forEach(a=>{ const v=a[k]; if(v==null||isNaN(v)){pen=false;return;} s+=(pen?'L':'M')+X(a.d).toFixed(1)+','+Y(v).toFixed(1); pen=true; }); return s; };
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(r.name)} river level 2026">`;
+    for (let v=lo; v<=hi; v++) s += `<line x1="${L}" x2="${L+pw}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)"/><text x="${L-4}" y="${Y(v)+4}" text-anchor="end" style="font-size:10.5px">${v}</text>`;
+    ['01','04','07','10'].forEach(m=>{ s += `<text x="${X('2026-'+m+'-01')}" y="${H-4}" style="font-size:10.5px">${MON[+m-1]}</text>`; });
+    [[mod,'var(--warn)'],[high,'var(--crit)']].forEach(([v,c])=>{ if (v>=lo && v<=hi) s += `<line x1="${L}" x2="${L+pw}" y1="${Y(v)}" y2="${Y(v)}" stroke="${c}" stroke-width="1.25"/>`; });
+    s += `<path d="${line(prev,'v')}" fill="none" stroke="var(--prior)" stroke-width="1.5"/><path d="${line(cur,'ltm')}" fill="none" stroke="var(--muted)" stroke-width="1.25"/><path d="${line(cur,'v')}" fill="none" stroke="var(--rain)" stroke-width="2"/>`;
+    if (lastV) s += `<circle cx="${X(lastV.d)}" cy="${Y(lastV.v)}" r="3.5" fill="var(--rain)" stroke="var(--surface)" stroke-width="1.5"/>`;
+    s += `<rect class="rv-hit" data-i="${ri}" x="${L}" y="${T}" width="${pw}" height="${ph}" fill="transparent"/></svg>`;
+    const gap = lastV ? mod - lastV.v : null;
+    const ltm = lastV ? lastV.ltm : null;
+    const st = !lastV ? ['crit','No reading'] : lastV.v>=high ? ['crit','High flood risk'] : lastV.v>=mod ? ['warn','Moderate flood risk'] : ['good','Below flood risk'];
+    const broken = cur.length && !lastV ? '' : '';
+    return `<div class="river"><div class="panel-h" style="align-items:center"><h3>${esc(r.name)} <span class="muted small" style="font-family:var(--sans);font-weight:500">${esc((r.river||'').replace(' River',''))}</span></h3><span class="pill ${st[0]}"><i></i>${st[1]}</span></div>
+      <div class="lv">${lastV?fmt(lastV.v,2):'–'}<small> m${lastV?` · ${fmtDs(lastV.d)}`:''}</small></div>
+      <div class="small ink2">${lastV?`${fmt(gap,1)} m below moderate risk (${fmt(mod,1)} m)`:'Gauge not reporting this year'}${ltm!=null?` · long-term mean ${fmt(ltm,1)} m`:''}</div>
+      <div class="chart">${s}</div></div>`;
+  }).join('');
+  el.querySelectorAll('.rv-hit').forEach(h=>{
+    const r = R[+h.dataset.i], sv = h.ownerSVGElement;
+    h.addEventListener('mousemove', e=>{
+      const q = svgPoint(sv,e); const x0 = dnum('2026-01-01'), x1=dnum('2026-12-31'); const d = diso(Math.round(x0 + (q.x-28)/(320-36)*(x1-x0)));
+      const key = d.slice(8)+'-'+d.slice(5,7)+'-'+d.slice(0,4), c = r.cur.find(a=>a[0]===key), p = r.prev.find(a=>a[0]===key.slice(0,6)+'2025');
+      showTip(`<b>${esc(r.name)}, ${fmtDs(d)}</b><br><span class="k" style="background:var(--rain)"></span>2026: <b>${c&&c[1]!=='---'?c[1]+' m':'no reading'}</b><br><span class="k" style="background:var(--prior)"></span>2025: ${p?p[1]+' m':'–'}${c&&c[2]?`<br>Long-term mean: ${(+c[2]).toFixed(2)} m`:''}`, e);
+    });
+    h.addEventListener('mouseleave', hideTip);
+  });
+}
+
+// ---------- heat ----------
+function renderHeat(){
+  const H = D.heat, sel = `${state.season.s} ${state.season.y}`;
+  let h = `<thead><tr><th></th>${H.cols.map(c=>`<th class="${c===sel?'col-sel':''}">${c.split(' ')[0]}<br><span class="${c===sel?'':'muted'}">'${c.slice(-2)}</span></th>`).join('')}</tr></thead><tbody>`;
+  H.rows.forEach(r=>{
+    h += `<tr><th class="row">${esc(r.region)}</th>` + r.v.map((v,i)=>{
+      if (!v) return `<td><div class="cell na" aria-label="no data"></div></td>`;
+      const k = pcls(v[0]);
+      return `<td><div class="cell" data-r="${esc(r.region)}" data-c="${H.cols[i]}" data-v="${v[0]}" data-n="${v[1]}" style="background:var(--d${k});color:var(--dt${k})">${v[0]}</div></td>`;
+    }).join('') + '</tr>';
+  });
+  const t = document.getElementById('heat'); t.innerHTML = h + '</tbody>';
+  t.querySelectorAll('.cell[data-v]').forEach(c=>{
+    c.addEventListener('mousemove', e=>showTip(`<b>${c.dataset.r}</b>, ${c.dataset.c}<br>Median gauge: <b>${c.dataset.v}% of normal</b><br>${c.dataset.n} gauge${c.dataset.n>1?'s':''}`, e));
+    c.addEventListener('mouseleave', hideTip);
+  });
+  document.getElementById('heat-legend').innerHTML = PL.map((l,i)=>`<span><i class="sw" style="background:var(--d${i})"></i>${l}</span>`).join('') + `<span><i class="sw" style="background:repeating-linear-gradient(135deg,transparent 0 3px,var(--axis) 3px 4px)"></i>No gauge with 80% of days</span>`;
+}
+
+// ---------- health ----------
+function renderHealth(){
+  const rows = S.filter(s=>state.net==='all'||s.net===state.net).map(s=>({s, iss:issues(s)}))
+    .sort((a,b)=>(b.iss.length>0)-(a.iss.length>0) || b.s.lag-a.s.lag || a.s.name.localeCompare(b.s.name));
+  const n = rows.length, nSilent = rows.filter(r=>silent(r.s)).length, flagged = rows.filter(r=>r.iss.length).length;
+  document.getElementById('health-sub').textContent = `${n} stations · ${nSilent} silent (AWS over 30 days, gauges over 45) · ${flagged} with an issue. Stations with issues first. Click a row to open it.`;
+  document.getElementById('health').innerHTML = `<thead><tr><th>Station</th><th>Type</th><th>Region</th><th>SWALIM status</th><th>Last data</th><th>Now</th><th>Days recorded, past 365</th><th>Issue</th></tr></thead><tbody>` +
+    rows.map(({s,iss})=>{ const [k,l]=status(s); return `<tr class="click ${s.code===state.code?'sel':''}" data-code="${s.code}" tabindex="0"><td><b>${esc(s.name)}</b> <span class="mono muted">${s.code.replace(/^(AWS|MRS)_/,'')}</span></td><td class="ink2">${s.net==='AWS'?'AWS':'Gauge'}</td><td class="ink2">${esc(s.region||'–')}</td><td class="ink2">${esc(s.status)}</td><td>${fmtD(s.last)}</td><td><span class="pill ${k}"><i></i>${l}</span></td><td><span class="bar"><b style="width:${s.cov365*100}%"></b></span>${fmt(s.cov365*100)}%</td><td class="${iss.length?'flag':''}" style="white-space:normal;min-width:220px">${iss.map(i=>i.short).join('; ')||'<span class="muted">–</span>'}</td></tr>`; }).join('') + '</tbody>';
+  document.querySelectorAll('#health tr.click').forEach(tr=>{ const f=()=>{ state.code=tr.dataset.code; save(); update(); document.getElementById('detail').scrollIntoView({behavior:'smooth',block:'start'}); }; tr.addEventListener('click',f); tr.addEventListener('keydown',e=>{ if(e.key==='Enter') f(); }); });
+}
+document.querySelectorAll('.seg button[data-net]').forEach(b=>b.addEventListener('click',()=>{ state.net=b.dataset.net; document.querySelectorAll('.seg button[data-net]').forEach(x=>x.setAttribute('aria-pressed', x===b)); renderHealth(); }));
+
+// ---------- method / validation ----------
+function renderMethod(){
+  const V = D.valid, Pw = D.power, pan = D.pan;
+  document.getElementById('method').innerHTML = [
+    `<b>Rain.</b> SWALIM's ${S.filter(s=>s.net==='Gauge').length} manual gauges come first; the ${S.filter(s=>s.net==='AWS').length} automatic weather stations add sensors for evaporation. Values outside 0–300 mm/day are removed. A season of 0 mm while CHIRPS showed 100 mm or more, or nearby gauges averaged 40 mm or more, is treated as missing days entered as zeros.`,
+    `<b>Normal.</b> CHIRPS v3 (Climate Hazards Center, 2025) Gu and Deyr totals at each station for 1991–2020, the WMO standard period. A season counts when 80% of its days were recorded.`,
+    `<b>Evaporation (ETo).</b> FAO-56 Penman-Monteith. Weather stations use their own sensors after QC. Everywhere else, and on sensor-fault days, ETo comes from NASA POWER (MERRA-2 and CERES), scaled month by month to match the stations.`,
+    `<b>Deyr model.</b> Linear regression of Somalia-average CHIRPS Oct–Dec rain on Sep–Nov Niño3.4 and DMI (NOAA PSL, HadISST), 1981–2025, checked by holding out each year. Scenarios use BoM's weekly values and its Sep–Nov IOD forecast.`,
+    `<b>Weather overlays.</b> Wind, satellite clouds, cyclone tracks, the satellite basemap and the 3D terrain view follow <a href="https://github.com/bilawalsidhu/gods-eye-view" target="_blank" rel="noopener">God's Eye View</a> (MIT), with sources for the Horn of Africa: GFS and ECMWF wind via Open-Meteo, Meteosat Indian Ocean imagery from EUMETSAT, IBTrACS and GDACS cyclones, AWS Terrain Tiles elevation and Sentinel-2 cloudless by EOX. All are captured when the page is built.`,
+    `<b>Forecast dashboard.</b> Modelled on ICPAC's East Africa Hazards Watch, SWALIM's 3-day rainfall forecast and Flood Watch, and the colour maps of Windy and Ventusky. Town rain: ECMWF 51-member ensemble. Map fields: NOAA GFS, ECMWF IFS and ECMWF AIFS, ECMWF's machine-learning model, all via Open-Meteo. Rivers: GloFAS v4 (Copernicus). Seas: Open-Meteo marine. Heat: apparent temperature. Dust: CAMS. Hazard thresholds: 30% chance of 50 mm in 72 h; 2.5 m waves; 40 °C feels-like; 250 µg/m³ dust; 60% of the model's 2023 flood flow.`,
+    `<b>Forecasts.</b> ECMWF SEAS5 via Open-Meteo: 51-member monthly means with anomalies against the model's own climate, not bias-corrected. CHIRPS3-GEFS 16-day total from the Climate Hazards Center. River levels and thresholds from SWALIM FRRIMS.`,
+  ].map(x=>`<li>${x}</li>`).join('');
+  const pct = v => `${v>0?'+':''}${fmt(v*100)}%`;
+  document.getElementById('valid').innerHTML = [
+    `<b>Gauges against CHIRPS:</b> r = ${fmt(V.gauge.r,2)}, bias ${pct(V.gauge.bias)} over ${fmt(V.gauge.n)} gauge-seasons. CHIRPS ingests some SWALIM gauges, so this overstates independent agreement.`,
+    `<b>Weather stations against CHIRPS:</b> r = ${fmt(V.aws.r,2)}, bias ${pct(V.aws.bias)} over ${V.aws.n} seasons. At Beletweyne the AWS reads about 3× the manual gauge 7.6 km away. AWS rain is shown but not trusted for totals.`,
+    `<b>NASA POWER ETo against station ETo:</b> r = ${fmt(Pw.r,2)} raw, POWER ${pct(Pw.power/Pw.aws-1)}. After monthly calibration: r = ${fmt(Pw.r_cal,2)}, mean error ${fmt(Pw.mae_cal,2)} mm/day over ${fmt(Pw.n)} station-days.`,
+    `<b>Station ETo against pan evaporation</b> at synoptic sites. ETo divided by pan evaporation: ${pan.map(p=>`${p.site} ${fmt(p.kp,2)}`).join(', ')}. FAO-56 expects roughly 0.6–0.85, so the size is right at three of four sites. Month-to-month agreement is weak (${pan.map(p=>`${p.site} r ${fmt(p.r,2)}`).join(', ')}), so the pans confirm the magnitude but not the seasonal pattern.`,
+    `<b>ERA5 is not used for rain:</b> at the weather stations it produced 20 mm a month against the stations' 34.`,
+  ].map(x=>`<li>${x}</li>`).join('');
+}
+
+function update(){
+  document.getElementById('f-season').value = `${state.season.s}|${state.season.y}`;
+  document.getElementById('f-station').value = state.code;
+  document.getElementById('f-layer').value = state.layer;
+  renderLegend(); renderMap(); renderDetail(); renderLedger(); renderHeat(); renderHealth(); renderWx(); renderRaw();
+}
+renderHeader(); renderOutlook(); renderFilters(); renderRivers(); renderRiversFc(); renderMarine(); renderTowns(); renderHazards(); renderCatalog(); renderMethod(); update(); applyView();
+if (WX && state.ov.cloud) preloadClouds();
+const rethemed = () => { renderMap(); renderWx(); };
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', rethemed);
+new MutationObserver(rethemed).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
+})();
+</script>
