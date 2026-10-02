@@ -191,7 +191,7 @@ def keep_ws(body, out):
     return lead + out + trail
 
 
-PLURAL = re.compile(r"^\s*[\w.\[\]]+\s*>\s*1\s*\?\s*'s'\s*:\s*''\s*$")
+PLURAL = re.compile(r"^\s*[\w.\[\]]+\s*(?:>\s*1\s*\?\s*'s'\s*:\s*''|===\s*1\s*\?\s*''\s*:\s*'s')\s*$")
 
 
 def translate_literal(lit):

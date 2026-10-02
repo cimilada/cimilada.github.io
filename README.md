@@ -96,3 +96,18 @@ sites, following [Google Search Central](https://developers.google.com/search/do
 To verify ownership in Google Search Console or Bing Webmaster Tools, choose the
 "HTML tag" method and save the code as the repository variable `GOOGLE_SITE_VERIFICATION`
 or `BING_SITE_VERIFICATION`, then re-run the workflow and submit `sitemap.xml`.
+
+## Fires, flood water and daily imagery (NASA)
+
+`fetch_wx.py` adds three NASA layers, all keyless and refreshed daily:
+
+- **Fires**: active fire detections from [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov/)
+  (VIIRS 375 m on NOAA-21, NOAA-20 and S-NPP; MODIS 1 km), last 7 days, from the open global
+  CSV files. The map shows 24 h, 48 h or 7 days; the Fires hazard card and statistics count
+  detections inside Somalia only.
+- **Flood water**: the VIIRS 2-day flood product from [NASA GIBS](https://nasa-gibs.github.io/gibs-api-docs/),
+  reduced to its flood classes.
+- **Latest satellite image**: VIIRS NOAA-21 true colour for the newest complete day.
+
+We acknowledge the use of data and imagery from NASA's Fire Information for Resource
+Management System (FIRMS), part of NASA's Earth Science Data and Information System (ESDIS).

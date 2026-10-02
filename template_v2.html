@@ -309,6 +309,10 @@ __NOSCRIPT__
         <label><input type="checkbox" id="o-barb"> Wind barbs</label>
         <label><input type="checkbox" id="o-tc"> Cyclone tracks</label>
         <label><input type="checkbox" id="o-img"> Satellite basemap</label>
+        <label><input type="checkbox" id="o-today"> Latest satellite image</label>
+        <label><input type="checkbox" id="o-fire"> Fires</label>
+        <select id="o-fireP" aria-label="Fire period"><option value="24">24 hours</option><option value="48">48 hours</option><option value="168">7 days</option></select>
+        <label><input type="checkbox" id="o-flood"> Flood water</label>
         <select id="o-field" aria-label="Forecast field"><option value="">No forecast field</option><option value="rain3">Rain, 3 hours</option><option value="rain24">Rain, next 24 hours</option><option value="temp">Temperature</option><option value="wspd">Wind speed</option></select>
         <select id="o-unit" aria-label="Wind speed unit"><option value="ms">m/s</option><option value="kmh">km/h</option><option value="kt">knots</option></select>
       </div>
@@ -524,7 +528,7 @@ const cols = [];
 for (let y=2005; y<=+ASOF.slice(0,4); y++) for (const n of ['Gu','Deyr']) if (`${y}-${String(SEAS[n][0]).padStart(2,'0')}-01` <= ASOF) cols.push({y, s:n});
 const WX = D.wx || null;
 const state = {layer:'deyr26', season:{y:2026,s:'Gu'}, code: byCode['MRS_HIBEL'] ? 'MRS_HIBEL' : S[0].code, net:'all',
-  ov:{wind:!!WX, cloud:!!WX, tc:false, img:false, barb:false}, model:'gfs', view:'2d', t:0, field:'', tv:'rain', unit:'ms', probe:null, town:'Mogadishu'};
+  ov:{wind:!!WX, cloud:!!WX, tc:false, img:false, barb:false, today:false, fire:false, flood:false}, fireP:168, model:'gfs', view:'2d', t:0, field:'', tv:'rain', unit:'ms', probe:null, town:'Mogadishu'};
 const FIELDS = ['rain3','rain24','temp','wspd'], MODELS = ['gfs','ecmwf','aifs'];
 const LAYERS = ['deyr26','gefs','season'];
 function loadSaved(v){
@@ -537,17 +541,18 @@ function loadSaved(v){
   if (v.field==='' || FIELDS.includes(v.field)) state.field=v.field ?? state.field;
   if (v.view==='2d'||v.view==='3d') state.view=v.view;
   if (['ms','kmh','kt'].includes(v.unit)) state.unit=v.unit;
+  if ([24,48,168].includes(v.fireP)) state.fireP=v.fireP;
 }
 try { loadSaved(JSON.parse(localStorage.getItem('swb2')||'null')); } catch(e){}
-const save = () => { try { localStorage.setItem('swb2', JSON.stringify({code:state.code,layer:state.layer,season:state.season,ov:state.ov,model:state.model,view:state.view,field:state.field,unit:state.unit})); } catch(e){} };
+const save = () => { try { localStorage.setItem('swb2', JSON.stringify({code:state.code,layer:state.layer,season:state.season,ov:state.ov,model:state.model,view:state.view,field:state.field,unit:state.unit,fireP:state.fireP})); } catch(e){} };
 
 // ---------- share links ----------
 // The artifact frame only passes a bare #token (letters, digits, . _ ~ -), so the view is
 // packed as  station.layer.SeasonYear.overlays.view.time , e.g. #MRS_HIBEL.deyr26.Gu2026.wcE.2d.p6
-// overlays: w wind, c clouds, t cyclone tracks, i imagery, b wind barbs; model E = ECMWF, A = AIFS (else GFS);
+// overlays: w wind, c clouds, t cyclone tracks, i imagery, b wind barbs, y latest satellite image, f fires, l flood water; model E = ECMWF, A = AIFS (else GFS);
 // field R rain 3 h, D rain 24 h, H temperature, S wind speed. time: p6 = +6 h, m12 = -12 h.
 const SHARE_BASE = '__SHARE_BASE__';
-const OVK = {wind:'w', cloud:'c', tc:'t', img:'i', barb:'b'}, FLK = {rain3:'R', rain24:'D', temp:'H', wspd:'S'};
+const OVK = {wind:'w', cloud:'c', tc:'t', img:'i', barb:'b', today:'y', fire:'f', flood:'l'}, FLK = {rain3:'R', rain24:'D', temp:'H', wspd:'S'};
 function viewToken(){
   const ov = Object.entries(OVK).filter(([k])=>state.ov[k]).map(([,c])=>c).join('') + ({ecmwf:'E', aifs:'A'}[state.model]||'') + (FLK[state.field]||'');
   return [state.code, state.layer, state.season.s+state.season.y, ov||'x', state.view, (state.t<0?'m':'p')+Math.abs(state.t), ...(LANG==='so'?['so']:[])].join('.');
@@ -744,13 +749,15 @@ function mapValue(st){
 }
 function renderMap(){
   const path = poly => 'M'+poly.map(([x,y])=>`${px(x).toFixed(1)},${py(y).toFixed(1)}`).join('L')+'Z';
-  const img = WX && state.ov.img;
+  const img = imgOn();
   const nb = ['ETH','KEN','DJI'].flatMap(k=>(D.shapes[k]||[]).map(p=>img ? `<path d="${path(p)}" fill="none" stroke="#fff" stroke-opacity=".35"/>` : `<path d="${path(p)}" fill="var(--land-n)" stroke="var(--land-edge)"/>`)).join('');
   const so = ['SOM','SOL'].flatMap(k=>(D.shapes[k]||[]).map(p=>img ? `<path d="${path(p)}" fill="none" stroke="#fff" stroke-opacity=".8" stroke-width="1.2"/>` : `<path d="${path(p)}" fill="var(--land)" stroke="var(--land)" stroke-width="1.2"/>`)).join('');
-  const base = img ? `<image href="${WX.imagery}" x="0" y="0" width="${MW}" height="${MH}" preserveAspectRatio="none"/>` : '';
-  const wxl = WX ? `<image id="field-img" x="0" y="0" width="${MW}" height="${MH}" preserveAspectRatio="none" visibility="hidden" style="pointer-events:none"/><image id="cloud-img" x="0" y="0" width="${MW}" height="${MH}" preserveAspectRatio="none" visibility="hidden" style="pointer-events:none"/><g id="wx-tc">${state.ov.tc ? tcSvg() : ''}</g><g id="wx-barb" style="pointer-events:none"></g><g id="wx-probe"></g>` : '';
+  const today = WX && state.ov.today && WX.gibs && WX.gibs.truecolor;
+  const base = img ? `<image href="${today ? WX.gibs.truecolor.src : WX.imagery}" x="0" y="0" width="${MW}" height="${MH}" preserveAspectRatio="none"/>` : '';
+  const flood = WX && state.ov.flood && WX.gibs && WX.gibs.flood ? `<image href="${WX.gibs.flood.src}" x="0" y="0" width="${MW}" height="${MH}" preserveAspectRatio="none" style="pointer-events:none"/>` : '';
+  const wxl = WX ? `<image id="field-img" x="0" y="0" width="${MW}" height="${MH}" preserveAspectRatio="none" visibility="hidden" style="pointer-events:none"/><image id="cloud-img" x="0" y="0" width="${MW}" height="${MH}" preserveAspectRatio="none" visibility="hidden" style="pointer-events:none"/><g id="wx-tc">${state.ov.tc ? tcSvg() : ''}</g><g id="wx-fire">${state.ov.fire ? fireSvg() : ''}</g><g id="wx-barb" style="pointer-events:none"></g><g id="wx-probe"></g>` : '';
   const clip = `<clipPath id="som-clip">${['SOM','SOL'].flatMap(k=>(D.shapes[k]||[]).map(p=>`<path d="${path(p)}"/>`)).join('')}</clipPath>`;
-  const ras = state.layer==='season' || (WX && state.field) ? '' : `<g clip-path="url(#som-clip)" opacity="${WX && state.ov.img ? .7 : 1}">${raster(state.layer)}</g>`;
+  const ras = state.layer==='season' || (WX && state.field) ? '' : `<g clip-path="url(#som-clip)" opacity="${WX && imgOn() ? .7 : 1}">${raster(state.layer)}</g>`;
   const LEFT = new Set(['AWS_BOORAMA','AWS_WGABU','AWS_DOLOOW','AWS_KISMAYO','AWS_QARDHO','AWS_BADHAN','AWS_GALKACYO','AWS_HUDUR','AWS_GURICEEL']);
   const vis = S.filter(s=>s.lat!=null).sort((a,b)=>(a.code===state.code)-(b.code===state.code) || (a.net==='AWS')-(b.net==='AWS'));
   const dots = vis.map(st=>{
@@ -764,10 +771,10 @@ function renderMap(){
   }).join('');
   const m = document.getElementById('map');
   const sea = img ? 'fill:#fff;opacity:.7' : 'fill:var(--muted)';
-  m.innerHTML = `<svg viewBox="0 0 ${MW} ${MH}" role="img" aria-label="Station map">${clip}${base}${nb}${so}${ras}${wxl}
+  m.innerHTML = `<svg viewBox="0 0 ${MW} ${MH}" role="img" aria-label="Station map">${clip}${base}${nb}${so}${ras}${flood}${wxl}
     <text x="${px(42.6)}" y="${py(-1.2)}" style="font:600 11px var(--sans);${sea};letter-spacing:.1em">INDIAN OCEAN</text>
     <text x="${px(46.3)}" y="${py(12.0)}" style="font:600 11px var(--sans);${sea};letter-spacing:.1em">GULF OF ADEN</text>${dots}</svg>`;
-  if (WX){ paintField(); paintClouds(); bindTc(m); paintBarbs(); renderProbe(); }
+  if (WX){ paintField(); paintClouds(); bindTc(m); bindFires(m); paintBarbs(); renderProbe(); }
   const {y,s:sn} = state.season;
   const T = {deyr26:[say('Deyr 2026 forecast','Deyr 2026 saadaasha'), say('Dots: ECMWF SEAS5 Oct–Dec rainfall as % of the model\'s own normal (51 members, run of September 2026). Background: CHIRPS Deyr rainfall in the five El Niño years since 1981, as % of normal.','Dhibcaha: ECMWF SEAS5 Oct-Dec roobabka % ee moodeelka caadiga ah (51 xubnood, ee Sebtembar 2026). Asalkii hore: CHIRPS Deyr roobabkii da\'ay shantii El Niño laga soo bilaabo 1981, sida % ee caadiga ah.')],
     gefs:[say(`Rain forecast from ${fmtDs(D.grids.gefs_start)}, 16 days`,`Saadaasha roobka laga bilaabo ${fmtDs(D.grids.gefs_start)}, 16 maalmood`), say('CHIRPS3-GEFS: NOAA GEFS ensemble forecast, bias-corrected to CHIRPS v3, 5 km. Dots show the value at each station.','CHIRPS3-GEFS: NOAA GEFS saadaasha kooxeed, eex-lagu saxay CHIRPS v3, 5 km. Dhibcuhu waxay muujinayaan qiimaha saldhig kasta.')],
@@ -783,6 +790,8 @@ function renderMap(){
   });
 }
 
+// true when a satellite picture is under the map (labels and wind trails switch to white)
+const imgOn = () => !!(WX && (state.ov.img || (state.ov.today && WX.gibs && WX.gibs.truecolor)));
 // ---------- weather overlays ----------
 // Animated wind, observed clouds on one timeline, cyclone tracks, satellite basemap and a 3D
 // terrain view, after God's Eye View (github.com/bilawalsidhu/gods-eye-view, MIT). Every layer
@@ -906,7 +915,7 @@ function cloudFrame(){
   fr.forEach((f,i)=>{ const d = Math.abs(parseUTC(f.t)-ta); if (d<bd){ bd = d; best = i; } });
   return bd<=HR ? best : -1;
 }
-const cloudInk = () => state.ov.img ? '#ffffff' : css('--cloud');
+const cloudInk = () => imgOn() ? '#ffffff' : css('--cloud');
 function tinted(i, color, done){
   const key = i+'|'+color, c = tintCache[key];
   if (c) return c.ready ? c : null;
@@ -1017,7 +1026,10 @@ function renderWxNote(){
       '<br>' + TC.map(c=>`<span style="white-space:nowrap;margin-right:12px"><i class="ln" style="background:var(${c[2]})"></i>${c[1]}</span>`).join('') + '<br>' +
       ((WX.active||[]).length ? `<b>Active now (GDACS):</b> ${WX.active.map(a=>esc(a.name)).join(', ')}.` : 'No active storm in the basin at build time (GDACS).'));
   }
-  if (state.ov.img || state.view==='3d') out.push(`<b>Basemap:</b> Sentinel-2 cloudless 2016 by EOX IT Services (CC BY 4.0, contains modified Copernicus Sentinel data).`);
+  if (state.ov.fire && WX.fires) { const st = fireStats(); out.push(say(`<b>Fires:</b> ${st.n} detections in Somalia in the last ${state.fireP===168?'7 days':state.fireP+' hours'} from NASA FIRMS (VIIRS 375 m on NOAA-21, NOAA-20 and S-NPP; MODIS 1 km), sized and coloured by fire radiative power; faded diamonds are outside Somalia. In Somalia most are grass, bush and charcoal burning; a detection is a hot spot, not a confirmed wildfire.`, `<b> Dabka: </b> ${st.n} Baadhitaannada Soomaaliya ee u dambeeyay ${state.fireP===168?'7 days':state.fireP+' hours'} ee NASA FIRMS (VIIRS 375 m on NOAA -21, NOAA -20 iyo S-NPP; MODIS 1 km), cabbir iyo midab leh awoodda shucaaca dabka; dheeman ba'ay ayaa Soomaaliya ka baxsan. Soomaaliya waxa ugu badan caws, baadiyaha iyo dhuxusha oo guba; ogaanshaha waa meel kulul, ma aha dab la xaqiijiyay.`) + ' ' + FIRE_CLS.slice().reverse().map(c=>`<span style="white-space:nowrap;margin-right:10px"><i class="sw" style="background:${c[1]};border:1px solid #2a0c08;transform:rotate(45deg) scale(.78)"></i>${c[2]}</span>`).join('') + ` <a href="${firmsLink()}" target="_blank" rel="noopener">${say('Open in NASA FIRMS','Ka furan NASA FIRMS')}</a>`); }
+  if (state.ov.flood && WX.gibs && WX.gibs.flood) out.push(say(`<b>Flood water:</b> NASA VIIRS 2-day flood product for ${fmtD(WX.gibs.flood.day)}; red is water outside its normal extent, yellow is flood water seen on one of the two days. Clouds hide water, so an empty map can mean cloud cover.`, `<b>Biyaha daadka:</b> NASA VIRS 2-maalmood daadadka badeecada ${fmtD(WX.gibs.flood.day)}; guduudku waa biyo ka baxsan xadkiisii ​​caadiga ahaa, jaale waa biyo daad ah oo la arko labada maalmood midkood. Daruuruhu waxay qariyaan biyaha, markaa khariidad madhan waxay la macno noqon kartaa daboolka daruuraha.`) + ` <a href="${worldviewLink()}" target="_blank" rel="noopener">${say('Open in NASA Worldview','Ka furan NASA Worldview')}</a>`);
+  if (state.ov.today && WX.gibs && WX.gibs.truecolor) out.push(say(`<b>Latest satellite image:</b> VIIRS NOAA-21 true colour, ${fmtD(WX.gibs.truecolor.day)}, from NASA GIBS. It shows cloud, dust, smoke and flooding as they looked that day.`, `<b> Sawirkii u dambeeyay ee dayax-gacmeedka:</b> VIIRS NOAA -21 midab run ah, ${fmtD(WX.gibs.truecolor.day)}, oo ka yimid NASA GIBS. Waxay ka muuqataa daruur, boodh, qiiq iyo daad siday maalintaas u ekaayeen.`));
+  if (imgOn() || state.view==='3d') out.push(`<b>Basemap:</b> Sentinel-2 cloudless 2016 by EOX IT Services (CC BY 4.0, contains modified Copernicus Sentinel data).`);
   if (state.view==='3d') out.push(`<b>3D:</b> elevation from AWS Terrain Tiles (SRTM and other open sources), averaged to 0.1°, heights ×30. Columns show the current map layer at each station; drag to orbit, click a column to open the station.`);
   el.innerHTML = out.join('<br>');
 }
@@ -1029,12 +1041,13 @@ function syncControls(){
   mdl.querySelector('option[value="aifs"]').hidden = !WM.aifs;
   document.getElementById('o-field').value = state.field;
   document.getElementById('o-unit').value = state.unit;
+  document.getElementById('o-fireP').value = String(state.fireP); document.getElementById('o-fireP').disabled = !state.ov.fire;
   document.querySelectorAll('.seg button[data-view]').forEach(b=>b.setAttribute('aria-pressed', b.dataset.view===state.view));
 }
 for (const k of Object.keys(OVK)){
   document.getElementById('o-'+k).addEventListener('change', e=>{
     state.ov[k] = e.target.checked; save();
-    if (k==='img' || k==='tc'){ windInk = state.ov.img ? '#ffffff' : css('--wind'); renderMap(); restartWind(); }
+    if (['img','tc','today','fire','flood'].includes(k)){ windInk = imgOn() ? '#ffffff' : css('--wind'); renderMap(); restartWind(); }
     if (k==='cloud'){ if (state.ov.cloud) preloadClouds(); paintClouds(); }
     if (k==='wind') restartWind();
     if (k==='barb') paintBarbs();
@@ -1042,6 +1055,7 @@ for (const k of Object.keys(OVK)){
   });
 }
 document.getElementById('o-model').addEventListener('change', e=>{ state.model = e.target.value; save(); fieldKey=''; restartWind(); paintField(); renderWx(); });
+document.getElementById('o-fireP').addEventListener('change', e=>{ state.fireP = +e.target.value; save(); renderMap(); renderWx(); renderHazards(); });
 document.getElementById('o-unit').addEventListener('change', e=>{ state.unit = e.target.value; save(); renderWx(); renderProbe(); });
 document.getElementById('o-field').addEventListener('change', e=>{ state.field = e.target.value; save(); renderMap(); renderWx(); });
 document.querySelectorAll('.seg button[data-view]').forEach(b=>b.addEventListener('click', ()=>{ state.view = b.dataset.view; save(); applyView(); renderWx(); }));
@@ -1053,7 +1067,7 @@ function applyView(){
 }
 function renderWx(){
   if (!WX) return;
-  windInk = state.ov.img ? '#ffffff' : css('--wind');
+  windInk = imgOn() ? '#ffffff' : css('--wind');
   syncControls(); prepField(); renderTimeline(); renderWxNote(); renderFieldLegend(); kickWind();
   if (G && state.view==='3d') updateGlobe();
 }
@@ -1473,7 +1487,7 @@ function barbSvg(kt, x, y, from, lat, ink){
 function paintBarbs(){
   const g = document.getElementById('wx-barb'); if (!g) return;
   if (!WX || !state.ov.barb || !prepField()){ g.innerHTML = ''; return; }
-  const ink = state.ov.img ? '#ffffff' : 'var(--ink)';
+  const ink = imgOn() ? '#ffffff' : 'var(--ink)';
   let s = '';
   for (let lat=Math.ceil(LAT0)+0.5; lat<LAT1; lat+=1) for (let lon=Math.ceil(LON0)+0.5; lon<LON1; lon+=1){
     const w = uv(lon, lat); if (!w) continue;
@@ -1599,6 +1613,14 @@ function buildHazards(){
       text: say(dusty[0].mx>=250 ? `Dust of 250 µg/m³ or more at ${dusty.filter(o=>o.mx>=250).map(o=>o.name).join(', ')}; highest ${fmt(dusty[0].mx)} at ${dusty[0].name}.` : `Dust stays under 250 µg/m³; highest ${fmt(dusty[0].mx)} µg/m³ at ${dusty[0].name}.`, dusty[0].mx>=250 ? `Boodhka 250 µg/m³ ama ka badan ${dusty.filter(o=>o.mx>=250).map(o=>o.name).join(', ')}; ugu sarreeya ${fmt(dusty[0].mx)}, ${dusty[0].name}.` : `Boodhku waxa ay ka hooseeyaan 250 µg/m³; ugu sarreeya ${fmt(dusty[0].mx)} µg/m³, ${dusty[0].name}.`),
       rule:'Highest hourly dust: 250 µg/m³ yellow, 600 orange, 1,200 red'});
   }
+  if (WX && WX.fires && WX.fires.rows){
+    const d1 = fireStats(24), d7 = fireStats(168), big = fireStats(48).maxFrp;
+    const places = d7.top.map(([n])=>(FC && FC.towns.find(t=>t.name===n)) || {name:n});
+    out.push({id:'maparea', fire:true, title:'Fires', event:'Fire', cat:'Fire', lv: d1.n>=30 || big>=100 ? 1 : 0, p: d1.n ? 1 : 0, places,
+      text: say(`${d1.n} fire detection${d1.n===1?'':'s'} in Somalia in the last 24 hours and ${d7.n} in 7 days (NASA FIRMS). ${d7.top.length ? `Most near ${d7.top.map(([n,c])=>`${n} (${c})`).join(', ')}.` : ''} Strongest in 48 hours: ${fmt(big,0)} MW.`,
+                `${d1.n} Dab-damis ka dhacay Soomaaliya 24-kii saac ee la soo dhaafay iyo ${d7.n} 7 maalmood gudahood (NASA FIRMS). ${d7.top.length ? `Most near ${d7.top.map(([n,c])=>`${n} (${c})`).join(', ')}.` : ''} Ugu xooga badan 48 saacadood: ${fmt(big,0)} MW.`),
+      rule:'30 or more detections in 24 h, or any fire of 100 MW or more in 48 h: yellow'});
+  }
   if (WX){
     const A = WX.active||[];
     out.push({id:'maparea', tc:true, title:'Tropical cyclones', event:'Tropical cyclone', cat:'Met', lv: A.length ? 2 : 0, p: A.length ? 1 : 0, places: A.map(a=>({name:a.name, lat:a.lat, lon:a.lon})),
@@ -1612,7 +1634,7 @@ function renderHazards(){
   HAZ = buildHazards();
   const el = document.getElementById('hz');
   el.innerHTML = HAZ.map((o,i)=>`<a class="${WMO[o.lv].cls}" href="#${o.id}" data-i="${i}" title="${esc(o.rule)}"><span class="t">${o.title}<span class="lv">${WMO[o.lv].name} · ${WMO[o.lv].act}</span></span><span>${o.text}</span><span class="cap"><span>Severity <b>${o.sev}</b></span><span>Certainty <b>${o.cert}</b></span><span>Urgency <b>${o.urg}</b></span></span></a>`).join('');
-  el.querySelectorAll('a').forEach(a=>a.addEventListener('click', ()=>{ const o = HAZ[+a.dataset.i]; if (o.tv){ state.tv = o.tv; renderTowns(); } if (o.tc && WX){ state.ov.tc = true; save(); renderMap(); renderWx(); } }));
+  el.querySelectorAll('a').forEach(a=>a.addEventListener('click', ()=>{ const o = HAZ[+a.dataset.i]; if (o.tv){ state.tv = o.tv; renderTowns(); } if (o.tc && WX){ state.ov.tc = true; save(); renderMap(); renderWx(); } if (o.fire && WX){ state.ov.fire = true; save(); renderMap(); renderWx(); } }));
   document.getElementById('hz-sub').innerHTML = FC ? say(`From the forecasts on this page, built ${esc(FC.built.replace('T',' '))} UTC · ${ageBadge(FC.built)}`, `Laga soo bilaabo saadaasha boggan, la dhisay ${esc(FC.built.replace('T',' '))} UTC · ${ageBadge(FC.built)}`) : 'Forecast data not built';
   const n = HAZ.filter(o=>o.lv).length;
   document.getElementById('cap-btn').textContent = `${document.getElementById('cap-box').hidden ? 'Show' : 'Hide'} CAP 1.2 alerts (${n})`;
@@ -1716,6 +1738,8 @@ function renderCatalog(){
     rows.push(['Meteosat IODC IR 10.8 µm', 'toa_brightness_temperature (shown as cloud opacity)', '~3 km', `past 24 h, 2-hourly (${WX.clouds.frames.length} images)`, WX.built, 'EUMETSAT', 'https://view.eumetsat.int/']);
     rows.push(['IBTrACS v4, North Indian', 'storm track, max sustained wind (kt)', '6-hourly fixes', `1980–present, ${WX.cyclones.length} storms near Somalia`, WX.built, 'NOAA NCEI', 'https://www.ncei.noaa.gov/products/international-best-track-archive']);
     rows.push(['GDACS tropical cyclones', 'active storm position and track', 'event', 'current', WX.built, 'GDACS (EC JRC, UN OCHA)', 'https://www.gdacs.org/']);
+    if (WX.fires && WX.fires.rows) rows.push(['NASA FIRMS active fires', 'fire detections: position, time, fire radiative power (MW), confidence', 'VIIRS 375 m, MODIS 1 km', `last 7 days, ${WX.fires.rows.length} detections`, WX.built, 'NASA LANCE FIRMS, open data', 'https://firms.modaps.eosdis.nasa.gov/']);
+    if (WX.gibs && WX.gibs.truecolor) rows.push(['NASA GIBS imagery', 'VIIRS NOAA-21 true colour; VIIRS 2-day flood water', '375 m, resampled', WX.gibs.truecolor.day, WX.built, 'NASA EOSDIS GIBS, open data', 'https://worldview.earthdata.nasa.gov/']);
     rows.push(['Terrain and imagery', 'surface_altitude (m); Sentinel-2 cloudless mosaic', '0.1°; ~10 m imagery resampled', 'static', WX.built, 'AWS Terrain Tiles (open DEMs); EOX CC BY 4.0', 'https://registry.opendata.aws/terrain-tiles/']);
   }
   if (FC){
@@ -1758,6 +1782,9 @@ const RAW = {
     const st = byCode[state.code];
     return {sub:`${esc(st.name)}. % of normal against CHIRPS v3 1991–2020.`, head:['year','season','rain_mm','normal_mm','pct_of_normal','eto_mm','p_over_eto','rainy_days','longest_dry_spell_d','onset','days_recorded_frac'],
       rows: st.seasons.map(r=>[r.y, r.s, r.P, r.norm, r.pct, r.E, r.ratio, r.rainy, r.dry, r.onset, r.cov])}; }},
+  fires:  {name:'Active fires, last 7 days (NASA FIRMS)', need:()=>WX && WX.fires && WX.fires.rows, get(){
+    return {sub:'One row per detection. Time is UTC. Confidence: l low, n nominal, h high. FRP: fire radiative power.', head:['time_utc','latitude','longitude','satellite','confidence','frp_mw','day_night','in_somalia','nearest_town','distance_km'],
+      rows: WX.fires.rows.map(r=>{ const som = inSomalia(r[0], r[1]), t = som ? nearestTown(r[0], r[1]) : null; return [r[2]+'Z', r[0], r[1], FIRE_SAT[r[3]]||r[3], r[4], r[5], r[6], som ? 'yes' : 'no', t ? t.name : '', t ? Math.round(t.km) : '']; }).reverse()}; }},
   tc:     {name:'Cyclone tracks near Somalia (IBTrACS)', need:()=>WX, get(){
     return {sub:'6-hourly fixes; wind in knots (USA agency 1-minute where available, else WMO).', head:['storm_id','name','season','fix','lon','lat','wind_kt','crossed_coast'],
       rows: WX.cyclones.flatMap(c=>c.p.map((p,i)=>[c.sid, c.name, c.y, i, p[0], p[1], p[2], c.land]))}; }},
@@ -1773,6 +1800,69 @@ function renderRaw(){
   tbl.innerHTML = `<thead><tr>${d.head.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>` + d.rows.slice(0, MAX).map(r=>`<tr>${d.head.map((h,i)=>`<td>${r[i]==null?'':esc(r[i])}</td>`).join('')}</tr>`).join('') + '</tbody>';
 }
 document.getElementById('raw-copy').addEventListener('click', ()=>{ const R = RAW[document.getElementById('raw-ds').value], d = R && R.get(); if (d) copyText(toCSV(d.head, d.rows), document.getElementById('raw-ok')); });
+
+// ---------- active fires (NASA FIRMS) ----------
+// VIIRS 375 m (NOAA-21, NOAA-20, S-NPP) and MODIS 1 km detections, last 7 days, baked in by fetch_wx.py.
+// Row: [lat, lon, 'YYYY-MM-DDTHH:MM' UTC, satellite, confidence l/n/h, FRP MW, D/N]
+const FIRE_SAT = {N21:'VIIRS NOAA-21', N20:'VIIRS NOAA-20', NPP:'VIIRS S-NPP', MOD:'MODIS'};
+const FIRE_CONF = {l:'low', n:'nominal', h:'high'};
+const FIRE_CLS = [[50,'var(--crit)','50 MW or more'], [10,'var(--serious)','10–50 MW'], [0,'var(--warn)','under 10 MW']];
+const fireCls = frp => FIRE_CLS.find(c=>frp>=c[0]);
+// the map extent also covers Ethiopia's Somali Region and north-east Kenya; stats count Somalia only
+const SOM_POLYS = ['SOM','SOL'].flatMap(k=>(D.shapes[k]||[]));
+function inPoly(lon, lat, poly){
+  let c = false;
+  for (let i=0, j=poly.length-1; i<poly.length; j=i++){
+    const [x1,y1] = poly[i], [x2,y2] = poly[j];
+    if ((y1>lat)!==(y2>lat) && lon < x1+(lat-y1)*(x2-x1)/(y2-y1)) c = !c;
+  }
+  return c;
+}
+const somCache = new Map();
+function inSomalia(lat, lon){
+  const k = lat+','+lon;
+  if (!somCache.has(k)) somCache.set(k, SOM_POLYS.some(p=>inPoly(lon, lat, p)));
+  return somCache.get(k);
+}
+function fireRows(hours, somaliaOnly){
+  if (!WX || !WX.fires || !WX.fires.rows) return [];
+  const end = parseUTC(WX.built), start = end - (hours ?? state.fireP)*HR;
+  return WX.fires.rows.filter(r=>{ const t = parseUTC(r[2]); return t>start && t<=end && (!somaliaOnly || inSomalia(r[0], r[1])); });
+}
+function nearestTown(lat, lon){
+  const towns = (FC && FC.towns) || [];
+  let best = null, bd = Infinity;
+  for (const t of towns){ const d = Math.hypot((t.lat-lat)*111, (t.lon-lon)*111*Math.cos(lat*Math.PI/180)); if (d<bd){ bd = d; best = t; } }
+  return best ? {name:best.name, km:bd} : null;
+}
+function fireSvg(){
+  const rows = fireRows().slice().sort((a,b)=>a[5]-b[5]);           // biggest drawn last, on top
+  return rows.map(r=>{
+    // diamonds, so fires never read as station dots (which are circles and squares)
+    const c = fireCls(r[5]), d = Math.max(3.2, Math.min(8.5, 2.6 + Math.sqrt(r[5])/1.8)), x = px(r[1]), y = py(r[0]);
+    return `<path class="fire" data-t="${r[2]}" data-k="${r[0]},${r[1]}" opacity="${inSomalia(r[0], r[1]) ? 1 : .4}" d="M${x.toFixed(1)},${(y-d).toFixed(1)}L${(x+d).toFixed(1)},${y.toFixed(1)}L${x.toFixed(1)},${(y+d).toFixed(1)}L${(x-d).toFixed(1)},${y.toFixed(1)}Z" fill="${c[1]}" stroke="#2a0c08" stroke-width=".9" stroke-linejoin="round" style="cursor:help"/>`;
+  }).join('');
+}
+function bindFires(root){
+  const idx = new Map((WX && WX.fires ? WX.fires.rows : []).map(r=>[r[2]+'|'+r[0]+','+r[1], r]));
+  root.querySelectorAll('path.fire').forEach(c=>{
+    const r = idx.get(c.dataset.t+'|'+c.dataset.k); if (!r) return;
+    c.addEventListener('mousemove', e=>{
+      const d = new Date(parseUTC(r[2])), eat = new Date(d.getTime()+3*HR), nt = nearestTown(r[0], r[1]);
+      showTip(`<b>${say('Fire detected','Dab la ogaaday')}</b> · ${eat.getUTCDate()} ${MON[eat.getUTCMonth()]}, ${String(eat.getUTCHours()).padStart(2,'0')}:${String(eat.getUTCMinutes()).padStart(2,'0')} EAT<br>${FIRE_SAT[r[3]]||r[3]} · ${r[6]==='N'?say('night','habeen'):say('day','maalin')}<br>${say('Fire radiative power','Awoodda shucaaca dabka')}: <b>${fmt(r[5],1)} MW</b> · ${say('confidence','kalsooni')} ${FIRE_CONF[r[4]]||r[4]}${inSomalia(r[0], r[1]) ? (nt?`<br>${fmt(nt.km)} km ${say('from','ka')} ${esc(nt.name)}`:'') : `<br>${say('Outside Somalia','Soomaaliya ka baxsan')}`}`, e);
+      e.stopPropagation();
+    });
+    c.addEventListener('mouseleave', hideTip);
+  });
+}
+function fireStats(hours){
+  const rows = fireRows(hours, true), byTown = {};
+  rows.forEach(r=>{ const t = nearestTown(r[0], r[1]); if (t) byTown[t.name] = (byTown[t.name]||0)+1; });
+  const top = Object.entries(byTown).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  return {n: rows.length, maxFrp: Math.max(0, ...rows.map(r=>r[5])), top};
+}
+const firmsLink = () => 'https://firms.modaps.eosdis.nasa.gov/map/#d:24hrs,7days;l:fires_all,country-outline,noaa21_crtc,earth;@46.6,5.2,6.4z';
+const worldviewLink = () => `https://worldview.earthdata.nasa.gov/?v=40.4,-2,51.8,12.4&l=VIIRS_NOAA21_CorrectedReflectance_TrueColor,VIIRS_Combined_Flood_2-Day,VIIRS_NOAA21_Thermal_Anomalies_375m_All,Coastlines_15m&t=${(WX && WX.gibs && WX.gibs.truecolor ? WX.gibs.truecolor.day : WX ? WX.built.slice(0,10) : '')}`;
 
 // ---------- detail ----------
 function series(st){ const f = dnum(st.d0); return {f, P:i=>st.P[i]==null?null:st.P[i]/10, E:i=>st.E[i]==null?null:st.E[i]/10, n:st.P.length}; }
@@ -2037,6 +2127,7 @@ function renderMethod(){
     `<b>Evaporation (ETo).</b> FAO-56 Penman-Monteith. Weather stations use their own sensors after QC. Everywhere else, and on sensor-fault days, ETo comes from NASA POWER (MERRA-2 and CERES), scaled month by month to match the stations.`,
     `<b>Deyr model.</b> Linear regression of Somalia-average CHIRPS Oct–Dec rain on Sep–Nov Niño3.4 and DMI (NOAA PSL, HadISST), 1981–2025, checked by holding out each year. Scenarios use BoM's weekly values and its Sep–Nov IOD forecast.`,
     `<b>Weather overlays.</b> Wind, satellite clouds, cyclone tracks, the satellite basemap and the 3D terrain view follow <a href="https://github.com/bilawalsidhu/gods-eye-view" target="_blank" rel="noopener">God's Eye View</a> (MIT), with sources for the Horn of Africa: GFS and ECMWF wind via Open-Meteo, Meteosat Indian Ocean imagery from EUMETSAT, IBTrACS and GDACS cyclones, AWS Terrain Tiles elevation and Sentinel-2 cloudless by EOX. All are captured when the page is built.`,
+    `<b>Fires and flood water.</b> Active fire detections from NASA FIRMS and daily imagery and flood maps from NASA GIBS, as used in NASA's Fire Map and Worldview. We acknowledge the use of data and imagery from NASA's Fire Information for Resource Management System (FIRMS), part of NASA's Earth Science Data and Information System (ESDIS).`,
     `<b>Forecast dashboard.</b> Modelled on ICPAC's East Africa Hazards Watch, SWALIM's 3-day rainfall forecast and Flood Watch, and the colour maps of Windy and Ventusky. Town rain: ECMWF 51-member ensemble. Map fields: NOAA GFS, ECMWF IFS and ECMWF AIFS, ECMWF's machine-learning model, all via Open-Meteo. Rivers: GloFAS v4 (Copernicus). Seas: Open-Meteo marine. Heat: apparent temperature. Dust: CAMS. Hazard thresholds: 30% chance of 50 mm in 72 h; 2.5 m waves; 40 °C feels-like; 250 µg/m³ dust; 60% of the model's 2023 flood flow.`,
     `<b>Forecasts.</b> ECMWF SEAS5 via Open-Meteo: 51-member monthly means with anomalies against the model's own climate, not bias-corrected. CHIRPS3-GEFS 16-day total from the Climate Hazards Center. River levels and thresholds from SWALIM FRRIMS.`,
   ].map(x=>`<li>${x}</li>`).join('');
@@ -2103,6 +2194,7 @@ const SO = {
   'Cimilada is an unofficial, non-commercial project. Official warnings come from the Somali Disaster Management Agency (SoDMA) and FAO SWALIM.':'Cimilada waa mashruuc aan rasmi ahayn, oo aan ganacsi ahayn. Digniinaha rasmiga ah waxay ka imaanayaan Hay\'adda Maareynta Masiibooyinka Soomaaliya (SoDMA) iyo FAO SWALIM.',
   'Visits and feature use are counted without cookies or personal data, to see what people use.':'Booqashooyinka iyo isticmaalka sifada waxaa lagu tiriyaa cookies-ka ama xogta gaarka ah, si loo arko waxay dadku isticmaalaan.',
   'Minor':'Yar', 'Moderate':'Dhexdhexaad', 'Severe':'Daran', 'Extreme':'Aad u daran', 'Likely':'Malaha', 'Possible':'Macquul ah', 'Unlikely':'Lagama yaabo', 'Future':'Mustaqbalka', 'Unknown':'Lama garanayo',
+  'Latest satellite image':'Sawirkii ugu dambeeyay ee dayax-gacmeedka', 'Fires':'Dabka', 'Flood water':'Biyo daad', '24 hours':'24 saacadood', '48 hours':'48 saacadood', '7 days':'7 maalmood',
   'Green':'Cagaaran', 'Yellow':'Jaalle', 'Orange':'Orange', 'Red':'Casaan', 'No warning':'Digniin ma leh', 'Be aware':'La soco', 'Be prepared':'U diyaar garow', 'Take action':'Talaabo qaado',
 };
 const SO_RX = [
@@ -2194,7 +2286,7 @@ function track(name, value){
   trackQ.push([name, value==null ? null : String(value).slice(0,60).replace(/[^\w.\-]+/g,'-')]);
   trackFlush();
 }
-const TRACK_CHANGE = {'o-field':'map-field', 'o-model':'model', 'o-unit':'wind-unit', 'f-layer':'map-layer', 'f-season':'season', 'f-station':'station', 'raw-ds':'raw-dataset'};
+const TRACK_CHANGE = {'o-fireP':'fire-period', 'o-field':'map-field', 'o-model':'model', 'o-unit':'wind-unit', 'f-layer':'map-layer', 'f-season':'season', 'f-station':'station', 'raw-ds':'raw-dataset'};
 const TRACK_CLICK = {'share-btn':'share-link', 'cap-btn':'cap-alerts', 'cap-copy':'cap-copy', 'raw-copy':'raw-csv', 'probe-csv':'point-csv', 'tl-play':'timeline-play', 'tl-now':'timeline-now', 'probe-close':'point-close', 'contact-copy':'contact-copy', 'contact-send':'contact-email'};
 document.addEventListener('change', e=>{
   const id = e.target.id || '';

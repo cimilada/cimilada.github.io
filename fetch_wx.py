@@ -11,6 +11,8 @@ US-centred (GOES, nowCOAST, NHC), so the Horn of Africa equivalents are used:
   cyclones  IBTrACS v4 North Indian basin since 1980 + GDACS active storms
   terrain   AWS Terrain Tiles (Terrarium; SRTM and other open DEMs), averaged to 0.1 deg
   imagery   Sentinel-2 cloudless 2016 by EOX (CC BY 4.0)
+  fires     NASA FIRMS active fires, VIIRS (NOAA-21, NOAA-20, S-NPP) and MODIS, last 7 days
+  gibs      NASA GIBS: latest VIIRS true-colour image and VIIRS 2-day flood water
 
 The page cannot fetch anything at view time, so every layer is baked in here.
 """
@@ -266,7 +268,86 @@ def imagery():
     return src
 
 
-OPTIONAL = {"clouds": {"w": IMG_W, "h": IMG_H, "frames": []}, "active": []}   # a failure here must not block the deploy
+# ---------------------------------------------------------------- fires (NASA FIRMS)
+FIRMS = [  # keyless global 7-day files; satellite code, path
+    ("N21", "noaa-21-viirs-c2/csv/J2_VIIRS_C2_Global_7d.csv"),
+    ("N20", "noaa-20-viirs-c2/csv/J1_VIIRS_C2_Global_7d.csv"),
+    ("NPP", "suomi-npp-viirs-c2/csv/SUOMI_VIIRS_C2_Global_7d.csv"),
+    ("MOD", "modis-c6.1/csv/MODIS_C6_1_Global_7d.csv"),
+]
+
+
+def fires(margin=0.5):
+    """Active fire detections from NASA FIRMS (VIIRS 375 m on NOAA-21, NOAA-20, S-NPP; MODIS 1 km),
+    last 7 days, inside the map extent. Each row: lat, lon, UTC time, satellite, confidence l/n/h,
+    fire radiative power (MW), D(ay)/N(ight)."""
+    rows, per = [], {}
+    for sat, path in FIRMS:
+        r = get("https://firms.modaps.eosdis.nasa.gov/data/active_fire/" + path, timeout=300)
+        if not r:
+            print("firms fail", sat, file=sys.stderr)
+            continue
+        n = 0
+        for x in csv.DictReader(io.StringIO(r.decode("utf-8", "ignore"))):
+            la, lo = float(x["latitude"]), float(x["longitude"])
+            if not (LAT0 - margin <= la <= LAT1 + margin and LON0 - margin <= lo <= LON1 + margin):
+                continue
+            c = x["confidence"].strip().lower()
+            if c.isdigit():                                   # MODIS gives 0-100; VIIRS gives l/n/h
+                c = "l" if int(c) < 30 else "n" if int(c) < 80 else "h"
+            t = x["acq_time"].zfill(4)
+            rows.append([round(la, 4), round(lo, 4), f"{x['acq_date']}T{t[:2]}:{t[2:]}", sat, c[:1],
+                         round(float(x["frp"] or 0), 1), x["daynight"][:1]])
+            n += 1
+        per[sat] = n
+    if not per:
+        return None
+    rows.sort(key=lambda r: r[2])
+    print("fires", per, "max FRP", max([r[5] for r in rows] or [0]), "MW")
+    return {"rows": rows, "per": per}
+
+
+# ---------------------------------------------------------------- daily imagery (NASA GIBS)
+def gibs_map(layer, day, fmt):
+    u = ("https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap"
+         f"&LAYERS={layer}&STYLES=&CRS=EPSG:4326&BBOX={LAT0},{LON0},{LAT1},{LON1}&WIDTH=1140&HEIGHT=1440"
+         f"&FORMAT=image/{fmt}&TRANSPARENT=TRUE&TIME={day}")
+    r = get(u, tries=3, timeout=120)
+    return Image.open(io.BytesIO(r)).convert("RGBA") if r else None
+
+
+def gibs():
+    """Latest complete day of VIIRS true colour, and VIIRS 2-day flood water, from NASA GIBS.
+    The newest day is often still processing (a nearly blank image), so walk back until one has content."""
+    out = {}
+    for back in range(0, 4):
+        day = (dt.date.today() - dt.timedelta(days=back)).isoformat()
+        tc = gibs_map("VIIRS_NOAA21_CorrectedReflectance_TrueColor", day, "jpeg")
+        if tc is None:
+            continue
+        a = np.asarray(tc.convert("L"), dtype="float32")
+        if (a > 8).mean() < 0.9:                              # mostly black: swath not filled in yet
+            continue
+        out["truecolor"] = {"day": day, "src": img_uri(tc.convert("RGB"), quality=70)}
+        fl = gibs_map("VIIRS_Combined_Flood_2-Day", day, "png")
+        if fl is not None:
+            f = np.asarray(fl)
+            # keep flood classes only: red = flood water, yellow = flood water seen in one of two days;
+            # drop blue (normal water), grey (cloud or no data) and empty land
+            red = (f[..., 0] > 200) & (f[..., 1] < 80) & (f[..., 3] > 0)
+            yel = (f[..., 0] > 200) & (f[..., 1] > 200) & (f[..., 2] < 80) & (f[..., 3] > 0)
+            m = np.zeros(f.shape, "uint8")
+            m[red] = (230, 38, 50, 255)
+            m[yel] = (255, 196, 0, 255)
+            out["flood"] = {"day": day, "px": int(red.sum() + yel.sum()),
+                            "src": img_uri(Image.fromarray(m, "RGBA"), lossless=True)}
+        print("gibs", day, "true colour", f"{len(out['truecolor']['src']) / 1e3:.0f} kB",
+              "flood px", out.get("flood", {}).get("px"))
+        return out
+    return None
+
+
+OPTIONAL = {"clouds": {"w": IMG_W, "h": IMG_H, "frames": []}, "active": [], "fires": {"rows": [], "per": {}}, "gibs": {}}   # a failure here must not block the deploy
 
 
 def cached(name, fn, refresh):
@@ -286,13 +367,13 @@ def cached(name, fn, refresh):
 
 def main():
     os.makedirs(W, exist_ok=True)
-    refresh = set(sys.argv[1:]) or {"wind", "clouds", "active"}    # fast-moving layers by default
+    refresh = set(sys.argv[1:]) or {"wind", "clouds", "active", "fires", "gibs"}    # fast-moving layers by default
     shapes = json.load(open("site.json"))["shapes"]
     polys = [p for k in ("SOM", "SOL") for p in shapes.get(k, [])]
     out = {"built": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M"),
            "extent": [LON0, LON1, LAT0, LAT1]}
     for name, fn in [("terrain", terrain), ("imagery", imagery), ("cyclones", lambda: cyclones(polys)),
-                     ("active", active_storms), ("clouds", clouds), ("wind", wind)]:
+                     ("active", active_storms), ("clouds", clouds), ("fires", fires), ("gibs", gibs), ("wind", wind)]:
         out[name] = cached(name, fn, refresh)
         print(name, "ok", flush=True)
     json.dump(out, open("wx.json", "w"), separators=(",", ":"))

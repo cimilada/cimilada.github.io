@@ -25,3 +25,5 @@ data/fc/marine.json
 research/*.html
 __pycache__/
 .DS_Store
+data/wx/fires.json
+data/wx/gibs.json
