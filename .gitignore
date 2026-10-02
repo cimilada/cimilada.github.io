@@ -27,3 +27,4 @@ __pycache__/
 .DS_Store
 data/wx/fires.json
 data/wx/gibs.json
+data/wx/ndvi.json

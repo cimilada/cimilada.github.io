@@ -267,6 +267,7 @@ __NOSCRIPT__
         <a class="btn" href="#contact">Contact</a>
       </div>
     </div>
+    <p class="so-note" id="offline" hidden></p>
     <p class="so-note" id="so-note" hidden>Soomaali (beta), oo lagu turjumay Google Translate. Qoraallada farsamada oo faahfaahsan ayaa weli ku qoran Ingiriis. Haddii aad aragto qalad, fadlan nala soo xiriir.</p>
     <div class="eyebrow">SWALIM gauges + AWS · CHIRPS v3 · ECMWF · NOAA GFS · GloFAS · FRRIMS</div>
     <h1>Weather forecasts and water balance for Somalia</h1>
@@ -277,7 +278,7 @@ __NOSCRIPT__
 
   <section class="panel" id="hazards" aria-labelledby="hz-h">
     <div class="panel-h"><h2 id="hz-h">Hazards, next 7 days</h2><span class="muted small" id="hz-sub"></span></div>
-    <div class="legend"><span><i class="sw" style="background:var(--good)"></i>Green: no warning</span><span><i class="sw" style="background:var(--warn)"></i>Yellow: be aware</span><span><i class="sw" style="background:var(--serious)"></i>Orange: be prepared</span><span><i class="sw" style="background:var(--crit)"></i>Red: take action</span><span class="muted">WMO impact-based warning colours</span><button type="button" class="btn" id="cap-btn" style="margin-left:auto">Show CAP 1.2 alerts</button></div>
+    <div class="legend"><span><i class="sw" style="background:var(--good)"></i>Green: no warning</span><span><i class="sw" style="background:var(--warn)"></i>Yellow: be aware</span><span><i class="sw" style="background:var(--serious)"></i>Orange: be prepared</span><span><i class="sw" style="background:var(--crit)"></i>Red: take action</span><span class="muted">WMO impact-based warning colours</span><a class="small" href="https://www.fao.org/locusts/en/" target="_blank" rel="noopener" style="margin-left:auto">Desert locust: FAO Locust Watch</a><a class="btn" id="hz-wa" href="#" target="_blank" rel="noopener">Share on WhatsApp</a><button type="button" class="btn" id="cap-btn">Show CAP 1.2 alerts</button></div>
     <div class="hz" id="hz"></div>
     <div class="raw-box" id="cap-box" hidden>
       <div class="raw-h"><span class="small ink2" id="cap-sub"></span><span style="display:flex;gap:8px;align-items:center"><span class="ok small" id="cap-ok" role="status" style="color:var(--good-ink)"></span><button type="button" class="btn" id="cap-copy">Copy XML</button></span></div>
@@ -313,6 +314,7 @@ __NOSCRIPT__
         <label><input type="checkbox" id="o-fire"> Fires</label>
         <select id="o-fireP" aria-label="Fire period"><option value="24">24 hours</option><option value="48">48 hours</option><option value="168">7 days</option></select>
         <label><input type="checkbox" id="o-flood"> Flood water</label>
+        <label><input type="checkbox" id="o-ndvi"> Vegetation</label>
         <select id="o-field" aria-label="Forecast field"><option value="">No forecast field</option><option value="rain3">Rain, 3 hours</option><option value="rain24">Rain, next 24 hours</option><option value="temp">Temperature</option><option value="wspd">Wind speed</option></select>
         <select id="o-unit" aria-label="Wind speed unit"><option value="ms">m/s</option><option value="kmh">km/h</option><option value="kt">knots</option></select>
       </div>
@@ -376,7 +378,7 @@ __NOSCRIPT__
     <div class="tbl-wrap"><table class="fc-tbl" id="towns-tbl"></table></div>
     <div class="legend" id="towns-legend"></div>
     <div class="raw-box" id="eps" hidden>
-      <div class="probe-h"><h3 id="eps-title"></h3><span class="muted small">ECMWF EPSgram style: line min–max, narrow box 10–90%, wide box 25–75%, bar median</span></div>
+      <div class="probe-h"><h3 id="eps-title"></h3><a class="btn" id="eps-wa" href="#" target="_blank" rel="noopener">Share on WhatsApp</a><span class="muted small">ECMWF EPSgram style: line min–max, narrow box 10–90%, wide box 25–75%, bar median</span></div>
       <div class="chart" id="eps-chart"></div>
     </div>
   </section>
@@ -528,7 +530,7 @@ const cols = [];
 for (let y=2005; y<=+ASOF.slice(0,4); y++) for (const n of ['Gu','Deyr']) if (`${y}-${String(SEAS[n][0]).padStart(2,'0')}-01` <= ASOF) cols.push({y, s:n});
 const WX = D.wx || null;
 const state = {layer:'deyr26', season:{y:2026,s:'Gu'}, code: byCode['MRS_HIBEL'] ? 'MRS_HIBEL' : S[0].code, net:'all',
-  ov:{wind:!!WX, cloud:!!WX, tc:false, img:false, barb:false, today:false, fire:false, flood:false}, fireP:168, model:'gfs', view:'2d', t:0, field:'', tv:'rain', unit:'ms', probe:null, town:'Mogadishu'};
+  ov:{wind:!!WX, cloud:!!WX, tc:false, img:false, barb:false, today:false, fire:false, flood:false, ndvi:false}, fireP:168, model:'gfs', view:'2d', t:0, field:'', tv:'rain', unit:'ms', probe:null, town:'Mogadishu'};
 const FIELDS = ['rain3','rain24','temp','wspd'], MODELS = ['gfs','ecmwf','aifs'];
 const LAYERS = ['deyr26','gefs','season'];
 function loadSaved(v){
@@ -549,10 +551,10 @@ const save = () => { try { localStorage.setItem('swb2', JSON.stringify({code:sta
 // ---------- share links ----------
 // The artifact frame only passes a bare #token (letters, digits, . _ ~ -), so the view is
 // packed as  station.layer.SeasonYear.overlays.view.time , e.g. #MRS_HIBEL.deyr26.Gu2026.wcE.2d.p6
-// overlays: w wind, c clouds, t cyclone tracks, i imagery, b wind barbs, y latest satellite image, f fires, l flood water; model E = ECMWF, A = AIFS (else GFS);
+// overlays: w wind, c clouds, t cyclone tracks, i imagery, b wind barbs, y latest satellite image, f fires, l flood water, g vegetation; model E = ECMWF, A = AIFS (else GFS);
 // field R rain 3 h, D rain 24 h, H temperature, S wind speed. time: p6 = +6 h, m12 = -12 h.
 const SHARE_BASE = '__SHARE_BASE__';
-const OVK = {wind:'w', cloud:'c', tc:'t', img:'i', barb:'b', today:'y', fire:'f', flood:'l'}, FLK = {rain3:'R', rain24:'D', temp:'H', wspd:'S'};
+const OVK = {wind:'w', cloud:'c', tc:'t', img:'i', barb:'b', today:'y', fire:'f', flood:'l', ndvi:'g'}, FLK = {rain3:'R', rain24:'D', temp:'H', wspd:'S'};
 function viewToken(){
   const ov = Object.entries(OVK).filter(([k])=>state.ov[k]).map(([,c])=>c).join('') + ({ecmwf:'E', aifs:'A'}[state.model]||'') + (FLK[state.field]||'');
   return [state.code, state.layer, state.season.s+state.season.y, ov||'x', state.view, (state.t<0?'m':'p')+Math.abs(state.t), ...(LANG==='so'?['so']:[])].join('.');
@@ -754,6 +756,7 @@ function renderMap(){
   const so = ['SOM','SOL'].flatMap(k=>(D.shapes[k]||[]).map(p=>img ? `<path d="${path(p)}" fill="none" stroke="#fff" stroke-opacity=".8" stroke-width="1.2"/>` : `<path d="${path(p)}" fill="var(--land)" stroke="var(--land)" stroke-width="1.2"/>`)).join('');
   const today = WX && state.ov.today && WX.gibs && WX.gibs.truecolor;
   const base = img ? `<image href="${today ? WX.gibs.truecolor.src : WX.imagery}" x="0" y="0" width="${MW}" height="${MH}" preserveAspectRatio="none"/>` : '';
+  const ndvi = WX && state.ov.ndvi && WX.ndvi && WX.ndvi.src ? `<image href="${WX.ndvi.src}" x="0" y="0" width="${MW}" height="${MH}" preserveAspectRatio="none" opacity=".88" style="pointer-events:none"/>` : '';
   const flood = WX && state.ov.flood && WX.gibs && WX.gibs.flood ? `<image href="${WX.gibs.flood.src}" x="0" y="0" width="${MW}" height="${MH}" preserveAspectRatio="none" style="pointer-events:none"/>` : '';
   const wxl = WX ? `<image id="field-img" x="0" y="0" width="${MW}" height="${MH}" preserveAspectRatio="none" visibility="hidden" style="pointer-events:none"/><image id="cloud-img" x="0" y="0" width="${MW}" height="${MH}" preserveAspectRatio="none" visibility="hidden" style="pointer-events:none"/><g id="wx-tc">${state.ov.tc ? tcSvg() : ''}</g><g id="wx-fire">${state.ov.fire ? fireSvg() : ''}</g><g id="wx-barb" style="pointer-events:none"></g><g id="wx-probe"></g>` : '';
   const clip = `<clipPath id="som-clip">${['SOM','SOL'].flatMap(k=>(D.shapes[k]||[]).map(p=>`<path d="${path(p)}"/>`)).join('')}</clipPath>`;
@@ -771,7 +774,7 @@ function renderMap(){
   }).join('');
   const m = document.getElementById('map');
   const sea = img ? 'fill:#fff;opacity:.7' : 'fill:var(--muted)';
-  m.innerHTML = `<svg viewBox="0 0 ${MW} ${MH}" role="img" aria-label="Station map">${clip}${base}${nb}${so}${ras}${flood}${wxl}
+  m.innerHTML = `<svg viewBox="0 0 ${MW} ${MH}" role="img" aria-label="Station map">${clip}${base}${nb}${so}${ras}${ndvi}${flood}${wxl}
     <text x="${px(42.6)}" y="${py(-1.2)}" style="font:600 11px var(--sans);${sea};letter-spacing:.1em">INDIAN OCEAN</text>
     <text x="${px(46.3)}" y="${py(12.0)}" style="font:600 11px var(--sans);${sea};letter-spacing:.1em">GULF OF ADEN</text>${dots}</svg>`;
   if (WX){ paintField(); paintClouds(); bindTc(m); bindFires(m); paintBarbs(); renderProbe(); }
@@ -1028,6 +1031,7 @@ function renderWxNote(){
   }
   if (state.ov.fire && WX.fires) { const st = fireStats(); out.push(say(`<b>Fires:</b> ${st.n} detections in Somalia in the last ${state.fireP===168?'7 days':state.fireP+' hours'} from NASA FIRMS (VIIRS 375 m on NOAA-21, NOAA-20 and S-NPP; MODIS 1 km), sized and coloured by fire radiative power; faded diamonds are outside Somalia. In Somalia most are grass, bush and charcoal burning; a detection is a hot spot, not a confirmed wildfire.`, `<b> Dabka: </b> ${st.n} Baadhitaannada Soomaaliya ee u dambeeyay ${state.fireP===168?'7 days':state.fireP+' hours'} ee NASA FIRMS (VIIRS 375 m on NOAA -21, NOAA -20 iyo S-NPP; MODIS 1 km), cabbir iyo midab leh awoodda shucaaca dabka; dheeman ba'ay ayaa Soomaaliya ka baxsan. Soomaaliya waxa ugu badan caws, baadiyaha iyo dhuxusha oo guba; ogaanshaha waa meel kulul, ma aha dab la xaqiijiyay.`) + ' ' + FIRE_CLS.slice().reverse().map(c=>`<span style="white-space:nowrap;margin-right:10px"><i class="sw" style="background:${c[1]};border:1px solid #2a0c08;transform:rotate(45deg) scale(.78)"></i>${c[2]}</span>`).join('') + ` <a href="${firmsLink()}" target="_blank" rel="noopener">${say('Open in NASA FIRMS','Ka furan NASA FIRMS')}</a>`); }
   if (state.ov.flood && WX.gibs && WX.gibs.flood) out.push(say(`<b>Flood water:</b> NASA VIIRS 2-day flood product for ${fmtD(WX.gibs.flood.day)}; red is water outside its normal extent, yellow is flood water seen on one of the two days. Clouds hide water, so an empty map can mean cloud cover.`, `<b>Biyaha daadka:</b> NASA VIRS 2-maalmood daadadka badeecada ${fmtD(WX.gibs.flood.day)}; guduudku waa biyo ka baxsan xadkiisii ​​caadiga ahaa, jaale waa biyo daad ah oo la arko labada maalmood midkood. Daruuruhu waxay qariyaan biyaha, markaa khariidad madhan waxay la macno noqon kartaa daboolka daruuraha.`) + ` <a href="${worldviewLink()}" target="_blank" rel="noopener">${say('Open in NASA Worldview','Ka furan NASA Worldview')}</a>`);
+  if (state.ov.ndvi && WX.ndvi && WX.ndvi.day) out.push(say(`<b>Vegetation:</b> VIIRS NOAA-20 8-day vegetation index (NDVI) to ${fmtD(WX.ndvi.day)}, from NASA GIBS. Brown is bare or dry ground, green is growing pasture and crops; compare it with the rain maps to follow drought and recovery.`, `<b> Dhirta:</b> VIRS NOAA -20 8-maalmood tusaha dhirta (NDVI) ilaa ${fmtD(WX.ndvi.day)}, laga bilaabo NASA GIBS. Bunnigu waa dhul qaawan ama dhul engegan, cagaarku waa daaq iyo dalag; barbar dhig khariidadaha roobka si aad u raacdo abaarta iyo soo kabashada.`) + ` <span style="white-space:nowrap"><i class="sw" style="width:90px;background:linear-gradient(90deg,#c9b8a0,#b39b78,#cfd27a,#7cb342,#2e7d32,#0b4f1d)"></i>${say('bare to dense','qaawan oo cufan')}</span> <a href="https://fews.net/east-africa/somalia" target="_blank" rel="noopener">FEWS NET Somalia</a>`);
   if (state.ov.today && WX.gibs && WX.gibs.truecolor) out.push(say(`<b>Latest satellite image:</b> VIIRS NOAA-21 true colour, ${fmtD(WX.gibs.truecolor.day)}, from NASA GIBS. It shows cloud, dust, smoke and flooding as they looked that day.`, `<b> Sawirkii u dambeeyay ee dayax-gacmeedka:</b> VIIRS NOAA -21 midab run ah, ${fmtD(WX.gibs.truecolor.day)}, oo ka yimid NASA GIBS. Waxay ka muuqataa daruur, boodh, qiiq iyo daad siday maalintaas u ekaayeen.`));
   if (imgOn() || state.view==='3d') out.push(`<b>Basemap:</b> Sentinel-2 cloudless 2016 by EOX IT Services (CC BY 4.0, contains modified Copernicus Sentinel data).`);
   if (state.view==='3d') out.push(`<b>3D:</b> elevation from AWS Terrain Tiles (SRTM and other open sources), averaged to 0.1°, heights ×30. Columns show the current map layer at each station; drag to orbit, click a column to open the station.`);
@@ -1047,7 +1051,7 @@ function syncControls(){
 for (const k of Object.keys(OVK)){
   document.getElementById('o-'+k).addEventListener('change', e=>{
     state.ov[k] = e.target.checked; save();
-    if (['img','tc','today','fire','flood'].includes(k)){ windInk = imgOn() ? '#ffffff' : css('--wind'); renderMap(); restartWind(); }
+    if (['img','tc','today','fire','flood','ndvi'].includes(k)){ windInk = imgOn() ? '#ffffff' : css('--wind'); renderMap(); restartWind(); }
     if (k==='cloud'){ if (state.ov.cloud) preloadClouds(); paintClouds(); }
     if (k==='wind') restartWind();
     if (k==='barb') paintBarbs();
@@ -1357,7 +1361,7 @@ function renderTowns(){
   document.getElementById('towns-sub').textContent = sub;
   document.getElementById('towns-legend').innerHTML = lg;
   tbl.querySelectorAll('[data-t]').forEach(c=>{ const pick = () => { state.town = tw[+c.dataset.t].name; renderTowns(); if (document.getElementById('raw-ds').value==='town') renderRaw(); }; c.addEventListener('click', pick); c.addEventListener('keydown', e=>{ if (e.key==='Enter') pick(); }); });
-  renderEps();
+  renderEps(); if (typeof updateShareLinks==='function') updateShareLinks();
   tbl.querySelectorAll('.cell[data-t]').forEach(c=>{
     const t = tw[+c.dataset.t], j = +c.dataset.j;
     c.addEventListener('mousemove', e=>{
@@ -1637,6 +1641,7 @@ function renderHazards(){
   el.querySelectorAll('a').forEach(a=>a.addEventListener('click', ()=>{ const o = HAZ[+a.dataset.i]; if (o.tv){ state.tv = o.tv; renderTowns(); } if (o.tc && WX){ state.ov.tc = true; save(); renderMap(); renderWx(); } if (o.fire && WX){ state.ov.fire = true; save(); renderMap(); renderWx(); } }));
   document.getElementById('hz-sub').innerHTML = FC ? say(`From the forecasts on this page, built ${esc(FC.built.replace('T',' '))} UTC · ${ageBadge(FC.built)}`, `Laga soo bilaabo saadaasha boggan, la dhisay ${esc(FC.built.replace('T',' '))} UTC · ${ageBadge(FC.built)}`) : 'Forecast data not built';
   const n = HAZ.filter(o=>o.lv).length;
+  if (typeof updateShareLinks==='function') updateShareLinks();
   document.getElementById('cap-btn').textContent = `${document.getElementById('cap-box').hidden ? 'Show' : 'Hide'} CAP 1.2 alerts (${n})`;
 }
 const xe = s => String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
@@ -1739,6 +1744,7 @@ function renderCatalog(){
     rows.push(['IBTrACS v4, North Indian', 'storm track, max sustained wind (kt)', '6-hourly fixes', `1980–present, ${WX.cyclones.length} storms near Somalia`, WX.built, 'NOAA NCEI', 'https://www.ncei.noaa.gov/products/international-best-track-archive']);
     rows.push(['GDACS tropical cyclones', 'active storm position and track', 'event', 'current', WX.built, 'GDACS (EC JRC, UN OCHA)', 'https://www.gdacs.org/']);
     if (WX.fires && WX.fires.rows) rows.push(['NASA FIRMS active fires', 'fire detections: position, time, fire radiative power (MW), confidence', 'VIIRS 375 m, MODIS 1 km', `last 7 days, ${WX.fires.rows.length} detections`, WX.built, 'NASA LANCE FIRMS, open data', 'https://firms.modaps.eosdis.nasa.gov/']);
+    if (WX.ndvi && WX.ndvi.day) rows.push(['VIIRS vegetation index (NDVI)', 'normalized difference vegetation index, 8-day composite', '~500 m, resampled', `to ${WX.ndvi.day}`, WX.built, 'NASA EOSDIS GIBS, open data', 'https://nasa-gibs.github.io/gibs-api-docs/']);
     if (WX.gibs && WX.gibs.truecolor) rows.push(['NASA GIBS imagery', 'VIIRS NOAA-21 true colour; VIIRS 2-day flood water', '375 m, resampled', WX.gibs.truecolor.day, WX.built, 'NASA EOSDIS GIBS, open data', 'https://worldview.earthdata.nasa.gov/']);
     rows.push(['Terrain and imagery', 'surface_altitude (m); Sentinel-2 cloudless mosaic', '0.1°; ~10 m imagery resampled', 'static', WX.built, 'AWS Terrain Tiles (open DEMs); EOX CC BY 4.0', 'https://registry.opendata.aws/terrain-tiles/']);
   }
@@ -2195,6 +2201,7 @@ const SO = {
   'Visits and feature use are counted without cookies or personal data, to see what people use.':'Booqashooyinka iyo isticmaalka sifada waxaa lagu tiriyaa cookies-ka ama xogta gaarka ah, si loo arko waxay dadku isticmaalaan.',
   'Minor':'Yar', 'Moderate':'Dhexdhexaad', 'Severe':'Daran', 'Extreme':'Aad u daran', 'Likely':'Malaha', 'Possible':'Macquul ah', 'Unlikely':'Lagama yaabo', 'Future':'Mustaqbalka', 'Unknown':'Lama garanayo',
   'Latest satellite image':'Sawirkii ugu dambeeyay ee dayax-gacmeedka', 'Fires':'Dabka', 'Flood water':'Biyo daad', '24 hours':'24 saacadood', '48 hours':'48 saacadood', '7 days':'7 maalmood',
+  'Vegetation':'Dhirta', 'Share on WhatsApp':'Ku wadaag WhatsApp', 'Desert locust: FAO Locust Watch':'Ayaxa saxaraha ah: FAO Ilaalada Ayaxa',
   'Green':'Cagaaran', 'Yellow':'Jaalle', 'Orange':'Orange', 'Red':'Casaan', 'No warning':'Digniin ma leh', 'Be aware':'La soco', 'Be prepared':'U diyaar garow', 'Take action':'Talaabo qaado',
 };
 const SO_RX = [
@@ -2261,6 +2268,46 @@ document.querySelectorAll('.seg.lang button').forEach(b=>b.addEventListener('cli
   document.getElementById('contact-copy').addEventListener('click', ()=>copyText(mail, document.getElementById('contact-ok')));
 })();
 
+// ---------- WhatsApp sharing ----------
+// WhatsApp is how most weather advice travels in Somalia, so town forecasts and the hazard
+// summary can be sent as plain text with a link back to the page.
+const pageUrl = anchor => (SITE ? SITE.alt[LANG] : SHARE_BASE.startsWith('http') ? SHARE_BASE : location.href.split('#')[0]) + (anchor ? '#' + anchor : '');
+const waHref = text => 'https://wa.me/?text=' + encodeURIComponent(text);
+function townShareText(t){
+  const nd = Math.min(7, t.days.filter((d,j)=>t.d[j]).length);
+  const lines = t.days.slice(0, nd).map((d,j)=>{
+    const o = t.d[j], dd = new Date(d+'T00:00:00Z');
+    return `${DOW[dd.getUTCDay()]} ${dd.getUTCDate()} ${MON[dd.getUTCMonth()]}: ` + say(`${fmt(o.med,0)} mm, ${pctS(o.pr10)} chance of 10 mm or more, up to ${fmt(o.tx,0)} °C`, `${fmt(o.med,0)} mm, ${pctS(o.pr10)} fursad 10 mm ama ka badan, ilaa ${fmt(o.tx,0)} °C`);
+  });
+  return [say(`Cimilada: ${t.name} (${t.region}), rain forecast for the next 7 days`, `Cimilada: ${t.name} (${t.region}), saadaasha roobka 7da maalmood ee soo socda`), ...lines,
+          say(`Chance of 50 mm or more within 3 days: ${pctS(t.pr50_72h)}.`, `Fursada 50 mm ama ka badan 3 maalmood gudahood: ${pctS(t.pr50_72h)}.`), pageUrl('towns')].join('\n');
+}
+function hazardShareText(){
+  const list = HAZ.filter(o=>o.lv);
+  const head = say(`Cimilada: weather hazards in Somalia, next 7 days`, `Cimilada: Khataraha Cimilada ee Soomaaliya, 7 maalmood ee soo socda`);
+  const tl = x => LANG==='so' ? (trText(x) || x).trim() : x;          // fixed labels follow the page language
+  const body = list.length ? list.map(o=>`• ${tl(o.title)}: ${tl(WMO[o.lv].name)}, ${tl(WMO[o.lv].act).toLowerCase()}. ${o.text}`)
+                           : [say('No hazard at yellow or above.', 'Ma jiraan wax khatar ah oo jaalaha ah ama ka sarreeya.')];
+  return [head, ...body, pageUrl('hazards')].join('\n');
+}
+function updateShareLinks(){
+  const hz = document.getElementById('hz-wa'); if (hz && HAZ.length) hz.href = waHref(hazardShareText());
+  const t = FC && FC.towns.find(x=>x.name===state.town), eps = document.getElementById('eps-wa');
+  if (eps && t) eps.href = waHref(townShareText(t));
+}
+const TRACK_SHARE = {'hz-wa':'whatsapp-hazards', 'eps-wa':'whatsapp-town'};
+
+// ---------- offline ----------
+// On the public site a service worker keeps each page a visitor opens, so it still loads
+// without a connection, showing the forecast from the last visit.
+function showOffline(){
+  const el = document.getElementById('offline');
+  el.hidden = navigator.onLine !== false;
+  if (!el.hidden) el.textContent = say(`You are offline. Showing the forecast built ${(FC||WX||{built:''}).built.replace('T',' ')} UTC.`, `Offline ayaad tahay Muujinaya saadaasha la dhisay ${(FC||WX||{built:''}).built.replace('T',' ')} UTC.`);
+}
+addEventListener('offline', showOffline); addEventListener('online', showOffline);
+if (SITE && 'serviceWorker' in navigator) addEventListener('load', ()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+
 // ---------- usage analytics ----------
 // Counts which features people use, through GoatCounter or Umami when the build configures
 // one (see build.py). No cookies, no personal data, nothing sent when neither is set up.
@@ -2296,6 +2343,7 @@ document.addEventListener('change', e=>{
 document.addEventListener('click', e=>{
   const t = e.target.closest('button,a,[data-t],.stn,#map svg'); if (!t) return;
   if (TRACK_CLICK[t.id]) return track(TRACK_CLICK[t.id]);
+  if (TRACK_SHARE[t.id]) return track(TRACK_SHARE[t.id], t.id==='eps-wa' ? state.town : null);
   if (t.dataset.view) return track('view', t.dataset.view);
   if (t.dataset.tv) return track('town-tab', t.dataset.tv);
   if (t.dataset.net) return track('station-network', t.dataset.net);
@@ -2311,7 +2359,7 @@ if (location.hash.length>1) track('shared-link-opened');
 applyLang(LANG, false);
 renderHeader(); renderOutlook(); renderFilters(); renderRivers(); renderRiversFc(); renderMarine(); renderTowns(); renderHazards(); renderCatalog(); renderMethod(); update(); applyView();
 if (WX && state.ov.cloud) preloadClouds();
-translateNode(document.body);
+translateNode(document.body); updateShareLinks(); showOffline();
 const rethemed = () => { renderMap(); renderWx(); };
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', rethemed);
 new MutationObserver(rethemed).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});

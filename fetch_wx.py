@@ -13,6 +13,7 @@ US-centred (GOES, nowCOAST, NHC), so the Horn of Africa equivalents are used:
   imagery   Sentinel-2 cloudless 2016 by EOX (CC BY 4.0)
   fires     NASA FIRMS active fires, VIIRS (NOAA-21, NOAA-20, S-NPP) and MODIS, last 7 days
   gibs      NASA GIBS: latest VIIRS true-colour image and VIIRS 2-day flood water
+  ndvi      NASA GIBS: VIIRS NOAA-20 8-day vegetation index (NDVI)
 
 The page cannot fetch anything at view time, so every layer is baked in here.
 """
@@ -347,7 +348,30 @@ def gibs():
     return None
 
 
-OPTIONAL = {"clouds": {"w": IMG_W, "h": IMG_H, "frames": []}, "active": [], "fires": {"rows": [], "per": {}}, "gibs": {}}   # a failure here must not block the deploy
+def ndvi():
+    """VIIRS NOAA-20 8-day NDVI (vegetation greenness) from NASA GIBS: the drought and pasture
+    indicator FEWS NET relies on. Recent composites sometimes miss tiles, so compare a few days
+    and keep the newest one with near-complete coverage."""
+    cands = []
+    for back in range(1, 14, 2):
+        day = (dt.date.today() - dt.timedelta(days=back)).isoformat()
+        u = ("https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap"
+             f"&LAYERS=VIIRS_NOAA20_NDVI_8Day&STYLES=&CRS=EPSG:4326&BBOX={LAT0},{LON0},{LAT1},{LON1}&WIDTH={IMG_W}"
+             f"&HEIGHT={IMG_H}&FORMAT=image/png&TRANSPARENT=TRUE&TIME={day}")
+        r = get(u, tries=2, timeout=120)
+        if not r:
+            continue
+        im = Image.open(io.BytesIO(r)).convert("RGBA")
+        cands.append((day, float((np.asarray(im)[..., 3] > 0).mean()), im))
+    if not cands:
+        return None
+    best = max(c[1] for c in cands)
+    day, cov, im = next(c for c in cands if c[1] >= 0.97 * best)     # newest with near-complete coverage
+    print("ndvi", day, "coverage", round(cov, 2), "of best", round(best, 2))
+    return {"day": day, "src": img_uri(im, quality=72)}
+
+
+OPTIONAL = {"clouds": {"w": IMG_W, "h": IMG_H, "frames": []}, "active": [], "fires": {"rows": [], "per": {}}, "gibs": {}, "ndvi": {}}   # a failure here must not block the deploy
 
 
 def cached(name, fn, refresh):
@@ -367,13 +391,13 @@ def cached(name, fn, refresh):
 
 def main():
     os.makedirs(W, exist_ok=True)
-    refresh = set(sys.argv[1:]) or {"wind", "clouds", "active", "fires", "gibs"}    # fast-moving layers by default
+    refresh = set(sys.argv[1:]) or {"wind", "clouds", "active", "fires", "gibs", "ndvi"}    # fast-moving layers by default
     shapes = json.load(open("site.json"))["shapes"]
     polys = [p for k in ("SOM", "SOL") for p in shapes.get(k, [])]
     out = {"built": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M"),
            "extent": [LON0, LON1, LAT0, LAT1]}
     for name, fn in [("terrain", terrain), ("imagery", imagery), ("cyclones", lambda: cyclones(polys)),
-                     ("active", active_storms), ("clouds", clouds), ("fires", fires), ("gibs", gibs), ("wind", wind)]:
+                     ("active", active_storms), ("clouds", clouds), ("fires", fires), ("gibs", gibs), ("ndvi", ndvi), ("wind", wind)]:
         out[name] = cached(name, fn, refresh)
         print(name, "ok", flush=True)
     json.dump(out, open("wx.json", "w"), separators=(",", ":"))

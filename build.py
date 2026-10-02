@@ -209,7 +209,23 @@ def site(template, payload, built):
                   {"src": "/assets/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}],
     }
     json.dump(manifest, open(f"{out}/site.webmanifest", "w"), indent=1)
-    print(f"{out}/: robots.txt, sitemap.xml, site.webmanifest, favicon.ico, assets/")
+    # Service worker: network first, so visitors get today's forecast when online; each page they
+    # open is kept, so it still loads offline. Only small files are precached, which keeps a first
+    # visit as light as before on metered mobile data.
+    open(f"{out}/sw.js", "w").write(f"""const CACHE = 'cimilada-{built[:10]}';
+const SMALL = ['/favicon.ico', '/assets/logo.svg', '/assets/icon-192.png', '/site.webmanifest'];
+self.addEventListener('install', e => {{ self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c => c.addAll(SMALL))); }});
+self.addEventListener('activate', e => e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE && k.startsWith('cimilada-')).map(k => caches.delete(k)))).then(() => self.clients.claim())));
+self.addEventListener('fetch', e => {{
+  const r = e.request, u = new URL(r.url);
+  if (r.method !== 'GET' || u.origin !== location.origin) return;
+  e.respondWith(fetch(r).then(res => {{
+    if (res.ok) {{ const copy = res.clone(); caches.open(CACHE).then(c => c.put(r, copy)); }}
+    return res;
+  }}).catch(() => caches.match(r, {{ignoreSearch: true}}).then(m => m || caches.match(u.pathname.startsWith('/so/') ? '/so/' : '/'))));
+}});
+""")
+    print(f"{out}/: robots.txt, sitemap.xml, site.webmanifest, sw.js, favicon.ico, assets/")
 
 
 build("site.json", "template.html", "dashboard_v1.html")

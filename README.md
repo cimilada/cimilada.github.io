@@ -111,3 +111,15 @@ or `BING_SITE_VERIFICATION`, then re-run the workflow and submit `sitemap.xml`.
 
 We acknowledge the use of data and imagery from NASA's Fire Information for Resource
 Management System (FIRMS), part of NASA's Earth Science Data and Information System (ESDIS).
+
+## Vegetation, sharing and offline use
+
+- **Vegetation**: VIIRS NOAA-20 8-day NDVI from NASA GIBS, the greenness index FEWS NET uses to
+  follow drought and pasture; `fetch_wx.py` keeps the newest composite with full coverage.
+- **Share on WhatsApp**: the hazard summary and each town's 7-day forecast can be sent as plain
+  text (English or Somali) with a link back to the page.
+- **Offline**: on the public site a service worker (`sw.js`, written by `build.py`) keeps each
+  page a visitor opens, so it still loads without a connection and says how old the forecast is.
+  Only small files are precached, so a first visit downloads nothing extra.
+- Desert locust layers were investigated (FAO Locust Hub) but its services now need a token and
+  its open extract ends in 2020, so the page links to FAO Locust Watch instead.
