@@ -42,19 +42,17 @@ jobs:
       #   SITE_URL          public address once a custom domain is live, e.g. https://cimilada.github.io/
       #   GOATCOUNTER_CODE  GoatCounter site code, e.g. cimilada  (visits and feature use)
       #   UMAMI_WEBSITE_ID  optional, Umami Cloud website id
+      #   GOOGLE_SITE_VERIFICATION / BING_SITE_VERIFICATION  search console verification codes
       - name: Build page
         env:
           SHARE_BASE: ${{ vars.SITE_URL || format('https://{0}.github.io/{1}/', github.repository_owner, github.event.repository.name) }}
           GOATCOUNTER_CODE: ${{ vars.GOATCOUNTER_CODE }}
           UMAMI_WEBSITE_ID: ${{ vars.UMAMI_WEBSITE_ID }}
           CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL || 'hmustafa1@hotmail.com' }}
+          GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
+          BING_SITE_VERIFICATION: ${{ vars.BING_SITE_VERIFICATION }}
           PAGES: "1"
-        run: |
-          python build.py
-          mkdir -p _site
-          cp dashboard.html _site/index.html
-          cp -r assets _site/assets
-          touch _site/.nojekyll
+        run: python build.py   # writes _site/: English and Somali pages, sitemap, robots.txt, icons
 
       - uses: actions/upload-pages-artifact@v3
         with:

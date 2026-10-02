@@ -252,6 +252,7 @@ a{color:var(--brand)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
+__NOSCRIPT__
 <div class="wrap">
   <header class="top">
     <div class="brand-row">
@@ -489,8 +490,11 @@ const ASOF = D.asof, MS = 864e5;
 const dnum = iso => Date.UTC(+iso.slice(0,4), +iso.slice(5,7)-1, +iso.slice(8,10))/MS;
 const diso = n => new Date(n*MS).toISOString().slice(0,10);
 const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+// On the public site the address decides the language (/ English, /so/ Somali; build.py sets
+// window.CIMILADA). Elsewhere, such as the claude.ai copy, the saved choice does.
+const SITE = window.CIMILADA || null;
 let LANG = 'en';
-try { if (localStorage.getItem('cimilada-lang')==='so') LANG = 'so'; } catch(e){}
+if (SITE) LANG = SITE.lang; else try { if (localStorage.getItem('cimilada-lang')==='so') LANG = 'so'; } catch(e){}
 const say = (en, so) => LANG==='so' && so!=null ? so : en;   // pick the sentence for the current language
 const fmtD = iso => { const d=new Date(iso+'T00:00:00Z'); return d.getUTCDate()+' '+MON[d.getUTCMonth()]+' '+d.getUTCFullYear(); };
 const fmtDs = iso => { const d=new Date(iso+'T00:00:00Z'); return d.getUTCDate()+' '+MON[d.getUTCMonth()]; };
@@ -557,12 +561,15 @@ function readToken(h){
   if (p[4]) v.view = p[4];
   loadSaved(v);
   const t = /^([pm])(\d{1,3})$/.exec(p[5]||''); if (t) state.t = (t[1]==='m'?-1:1)*+t[2];
-  if (p[6]==='so' || p[6]==='en'){ LANG = p[6]; try { localStorage.setItem('cimilada-lang', LANG); } catch(e){} }
+  if (p[6]==='so' || p[6]==='en'){
+    if (SITE && SITE.alt[p[6]] && p[6]!==SITE.lang) location.replace(SITE.alt[p[6]] + location.hash);   // open the link's language page
+    else { LANG = p[6]; if (!SITE) try { localStorage.setItem('cimilada-lang', LANG); } catch(e){} }
+  }
   return true;
 }
 readToken(location.hash);
 function shareUrl(){
-  const base = SHARE_BASE.startsWith('http') ? SHARE_BASE : location.href.split('#')[0];
+  const base = SITE ? SITE.alt[LANG] : SHARE_BASE.startsWith('http') ? SHARE_BASE : location.href.split('#')[0];
   return base + '#' + viewToken();
 }
 document.getElementById('share-btn').addEventListener('click', ()=>{
@@ -2139,8 +2146,9 @@ function translateNode(root){
 }
 new MutationObserver(recs=>{ if (LANG!=='so') return; for (const r of recs) r.addedNodes.forEach(translateNode); }).observe(document.body, {childList:true, subtree:true});
 function applyLang(l, rerender){
+  if (rerender && SITE && SITE.alt[l] && l!==SITE.lang){ location.href = SITE.alt[l] + location.hash; return; }   // each language has its own address
   LANG = l;
-  try { localStorage.setItem('cimilada-lang', l); } catch(e){}
+  if (!SITE) try { localStorage.setItem('cimilada-lang', l); } catch(e){}
   document.documentElement.lang = l;
   MON.splice(0, 12, ...(l==='so' ? MON_SO : MON_EN));
   if (typeof DOW!=='undefined') DOW.splice(0, 7, ...(l==='so' ? DOW_SO : DOW_EN));
@@ -2149,7 +2157,7 @@ function applyLang(l, rerender){
   if (rerender){ renderHeader(); renderOutlook(); renderRivers(); renderRiversFc(); renderMarine(); renderTowns(); renderHazards(); renderFilters(); update(); }
   translateNode(document.body);
 }
-document.querySelectorAll('.seg.lang button').forEach(b=>b.addEventListener('click', ()=>{ if (b.dataset.lang!==LANG){ applyLang(b.dataset.lang, true); track('language', b.dataset.lang); } }));
+document.querySelectorAll('.seg.lang button').forEach(b=>b.addEventListener('click', ()=>{ if (b.dataset.lang!==LANG){ track('language', b.dataset.lang); applyLang(b.dataset.lang, true); } }));
 
 // ---------- contact ----------
 (function(){

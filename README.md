@@ -76,3 +76,23 @@ The site is served from GitHub Pages. Free ways to give it a "cimilada" address:
 3. **`cimilada.eu.org`** via [nic.eu.org](https://nic.eu.org): free and permanent, manual
    approval that can take weeks; needs nameservers first.
 4. **`cimilada.com`** (or `.org`) costs about US$10 a year and is the most dependable.
+
+## Search engines and icons
+
+`build.py` (with `PAGES=1`) writes the public site with the metadata that
+[jekyll-seo-tag](https://github.com/jekyll/jekyll-seo-tag) and
+[jekyll-sitemap](https://github.com/jekyll/jekyll-sitemap) generate for GitHub Pages
+sites, following [Google Search Central](https://developers.google.com/search/docs):
+
+- one address per language, `/` (English) and `/so/` (Somali), linked with `hreflang`
+  and a canonical URL; the language switch moves between them
+- title, description, Open Graph and Twitter cards per language
+- schema.org JSON-LD: `WebSite`, `Organization`, `WebApplication` and `Dataset`
+  (the Dataset entry makes the forecasts eligible for Google Dataset Search)
+- `robots.txt`, `sitemap.xml` (daily `lastmod`, language alternates), a `<noscript>` summary
+- `favicon.ico`, SVG and PNG icons, Apple touch icon and `site.webmanifest`, so phones can
+  install the site like an app
+
+To verify ownership in Google Search Console or Bing Webmaster Tools, choose the
+"HTML tag" method and save the code as the repository variable `GOOGLE_SITE_VERIFICATION`
+or `BING_SITE_VERIFICATION`, then re-run the workflow and submit `sitemap.xml`.
