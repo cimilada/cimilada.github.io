@@ -123,3 +123,22 @@ Management System (FIRMS), part of NASA's Earth Science Data and Information Sys
   Only small files are precached, so a first visit downloads nothing extra.
 - Desert locust layers were investigated (FAO Locust Hub) but its services now need a token and
   its open extract ends in 2020, so the page links to FAO Locust Watch instead.
+
+## Weather now (after Google Weather)
+
+A town card modelled on the features in Google's
+[How Google Weather works](https://support.google.com/websearch/answer/13687874):
+
+- **Current conditions**: temperature, feels-like, sky, humidity, wind and gusts, cloud, UV
+  index (WHO bands), sunrise and sunset. "Now" is the hourly forecast for the viewer's current
+  hour in Somalia, so it stays right through the day.
+- **Next 12 hours**: hour-by-hour chance and amount of rain with a plain summary. Somalia has
+  no weather radar, so this comes from forecast models (Google's nowcast also uses radar).
+- **Hourly (24 h) and 10-day** strips.
+- **Air quality**: US AQI with the EPA category and health advice; PM2.5, PM10, dust, ozone (CAMS).
+- **Pollen**: not shown; no open pollen forecast covers Somalia.
+- **Record and unusual temperatures**: the week's forecast highs against 1991–2025 NASA POWER
+  normals and records for the time of year, corrected for each town's model bias over the past
+  month (`fetch_fc.py` stages `now` and `clim`; `data/fc/clim.json` is fetched once).
+- **"What's the weather where you are?"**: visitors' reports arrive as Umami events
+  (`weather-report`, e.g. `Bosaso-dusty`).

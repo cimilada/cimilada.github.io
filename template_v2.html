@@ -265,6 +265,25 @@ a{color:var(--brand)}
   .main.map-wide #maparea>*,#maparea:fullscreen>*{grid-column:1!important;grid-row:auto!important}
   .main.map-wide #maparea>#mapbox,.main.map-wide #maparea>#globe,#maparea:fullscreen>#mapbox,#maparea:fullscreen>#globe{width:100%}
 }
+/* weather now card (after Google Weather) */
+.now{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:24px;align-items:start}
+@media (max-width:900px){.now{grid-template-columns:minmax(0,1fr)}}
+.now-main{display:grid;gap:12px;align-content:start}
+.now-temp{display:flex;align-items:center;gap:14px}
+.now-temp .wx{width:72px;height:72px;flex:none}
+.now-temp .v{font:600 64px/1 var(--cond)}
+.now-temp .v small{font-size:26px;color:var(--muted);font-weight:500}
+.now-desc{font:600 18px var(--sans);color:var(--ink)}
+.now-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 18px;font-size:14px;color:var(--ink2)}
+.now-grid b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.strip{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+.strip .c{flex:none;min-width:56px;display:grid;justify-items:center;gap:2px;padding:6px 4px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.strip .c b{color:var(--ink);font-size:14px}
+.strip .c .wx{width:28px;height:28px}
+.strip .c .pp{color:var(--rain);font-weight:600}
+.chipx{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:700}
+.report{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.now-note{font-size:13px;color:var(--ink2)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -290,7 +309,7 @@ __NOSCRIPT__
     <p class="lede" id="lede"></p>
   </header>
 
-  <nav class="nav" aria-label="Sections"><a href="#hazards">Hazards</a><a href="#maparea">Forecast map</a><a href="#towns">Town forecasts</a><a href="#flood-h">Rivers and floods</a><a href="#ol-h">Deyr outlook</a><a href="#marine">Seas</a><a href="#ledger-h">Seasons</a><a href="#heat-h">Regions</a><a href="#health-h">Stations</a><a href="#datasets">Data</a></nav>
+  <nav class="nav" aria-label="Sections"><a href="#hazards">Hazards</a><a href="#now">Weather now</a><a href="#maparea">Forecast map</a><a href="#towns">Town forecasts</a><a href="#flood-h">Rivers and floods</a><a href="#ol-h">Deyr outlook</a><a href="#marine">Seas</a><a href="#ledger-h">Seasons</a><a href="#heat-h">Regions</a><a href="#health-h">Stations</a><a href="#datasets">Data</a></nav>
 
   <section class="panel" id="hazards" aria-labelledby="hz-h">
     <div class="panel-h"><h2 id="hz-h">Hazards, next 7 days</h2><span class="muted small" id="hz-sub"></span></div>
@@ -300,6 +319,35 @@ __NOSCRIPT__
       <div class="raw-h"><span class="small ink2" id="cap-sub"></span><span style="display:flex;gap:8px;align-items:center"><span class="ok small" id="cap-ok" role="status" style="color:var(--good-ink)"></span><button type="button" class="btn" id="cap-copy">Copy XML</button></span></div>
       <pre class="raw" id="cap-xml"></pre>
     </div>
+  </section>
+
+  <section class="panel" id="now" aria-labelledby="now-h">
+    <div class="panel-h"><h2 id="now-h">Weather now</h2>
+      <label class="small ink2" for="now-town" style="display:flex;gap:8px;align-items:center">Town<select id="now-town"></select></label>
+    </div>
+    <div class="now">
+      <div class="now-main">
+        <div class="now-temp"><span id="now-icon"></span><span class="v" id="now-t">–</span><div><div class="now-desc" id="now-desc"></div><div class="small ink2" id="now-hl"></div></div></div>
+        <div class="now-grid" id="now-grid"></div>
+        <div class="now-note" id="now-clim"></div>
+        <div style="display:grid;gap:6px">
+          <h3 id="now-aq-h">Air quality</h3>
+          <div class="now-note" id="now-aq"></div>
+          <div class="now-note muted" id="now-pollen">Pollen: there is no open pollen forecast for Somalia. The only free one covers Europe.</div>
+        </div>
+      </div>
+      <div style="display:grid;gap:14px;min-width:0">
+        <div style="display:grid;gap:6px"><h3>Next 12 hours</h3><p class="now-note" id="now-cast"></p><div class="chart" id="now-cast-chart"></div></div>
+        <div style="display:grid;gap:6px"><h3>Hourly</h3><div class="strip" id="now-hourly"></div></div>
+        <div style="display:grid;gap:6px"><h3>10 days</h3><div class="strip" id="now-daily"></div></div>
+        <div style="display:grid;gap:6px">
+          <h3>What's the weather where you are?</h3>
+          <div class="report" id="now-report"></div>
+          <p class="now-note muted" id="now-report-note">Your report is counted anonymously, with the town you chose, to help check the forecasts.</p>
+        </div>
+      </div>
+    </div>
+    <p class="muted small" id="now-src"></p>
   </section>
 
   <div class="filters" role="group" aria-label="Filters">
@@ -1080,7 +1128,7 @@ for (const k of Object.keys(OVK)){
 }
 document.getElementById('o-model').addEventListener('change', e=>{ state.model = e.target.value; save(); fieldKey=''; restartWind(); paintField(); renderWx(); });
 document.getElementById('o-fireP').addEventListener('change', e=>{ state.fireP = +e.target.value; save(); renderMap(); renderWx(); renderHazards(); });
-document.getElementById('o-unit').addEventListener('change', e=>{ state.unit = e.target.value; save(); renderWx(); renderProbe(); });
+document.getElementById('o-unit').addEventListener('change', e=>{ state.unit = e.target.value; save(); renderWx(); renderProbe(); renderNow(); });
 document.getElementById('o-field').addEventListener('change', e=>{ state.field = e.target.value; save(); renderMap(); renderWx(); });
 document.querySelectorAll('.seg button[data-view]').forEach(b=>b.addEventListener('click', ()=>{ state.view = b.dataset.view; save(); applyView(); renderWx(); }));
 function applyView(){
@@ -1355,7 +1403,7 @@ function renderTowns(){
   document.querySelectorAll('.seg button[data-tv]').forEach(b=>b.setAttribute('aria-pressed', b.dataset.tv===state.tv));
   const tw = FC.towns, v = state.tv, tbl = document.getElementById('towns-tbl');
   const head = days => '<thead><tr><th></th>' + days.map(d=>{ const dd = new Date(d+'T00:00:00Z'), fri = dd.getUTCDay()===5; return `<th class="${fri?'we':''}">${DOW[dd.getUTCDay()]}<br><span class="${fri?'':'muted'}">${dd.getUTCDate()} ${MON[dd.getUTCMonth()]}</span></th>`; }).join('');
-  const row = t => `<th class="row" data-t="${tw.indexOf(t)}" tabindex="0">${esc(t.name)}<span>${esc(t.region)}</span></th>`;
+  const row = t => `<tr><th class="row" data-t="${tw.indexOf(t)}" tabindex="0">${esc(t.name)}<span>${esc(t.region)}</span></th>`;
   let h = '', sub = '', lg = '';
   if (v==='rain'){
     const nd = tw[0].days.filter((d,j)=>tw.some(t=>t.d[j])).length, days = tw[0].days.slice(0, nd);
@@ -1380,7 +1428,7 @@ function renderTowns(){
   tbl.innerHTML = h.replace(/<tr>(<th class="row" data-t="(\d+)")/g, (m, a, i)=>`<tr class="${tw[+i].name===state.town?'sel':''}">${a}`);
   document.getElementById('towns-sub').textContent = sub;
   document.getElementById('towns-legend').innerHTML = lg;
-  tbl.querySelectorAll('[data-t]').forEach(c=>{ const pick = () => { state.town = tw[+c.dataset.t].name; renderTowns(); if (document.getElementById('raw-ds').value==='town') renderRaw(); }; c.addEventListener('click', pick); c.addEventListener('keydown', e=>{ if (e.key==='Enter') pick(); }); });
+  tbl.querySelectorAll('[data-t]').forEach(c=>{ const pick = () => { state.town = tw[+c.dataset.t].name; renderTowns(); renderNow(); if (document.getElementById('raw-ds').value==='town') renderRaw(); }; c.addEventListener('click', pick); c.addEventListener('keydown', e=>{ if (e.key==='Enter') pick(); }); });
   renderEps(); if (typeof updateShareLinks==='function') updateShareLinks();
   tbl.querySelectorAll('.cell[data-t]').forEach(c=>{
     const t = tw[+c.dataset.t], j = +c.dataset.j;
@@ -2223,6 +2271,31 @@ const SO = {
   'Latest satellite image':'Sawirkii ugu dambeeyay ee dayax-gacmeedka', 'Fires':'Dabka', 'Flood water':'Biyo daad', '24 hours':'24 saacadood', '48 hours':'48 saacadood', '7 days':'7 maalmood',
   'Vegetation':'Dhirta', 'Share on WhatsApp':'Ku wadaag WhatsApp', 'Desert locust: FAO Locust Watch':'Ayaxa saxaraha ah: FAO Ilaalada Ayaxa',
   'Expand map':'Balaadhi khariidada', 'Shrink map':'Khariidadda dhimi', 'Full screen':'Shaashad buuxda', 'Exit full screen':'Ka bax shaashada buuxda',
+  'Weather now':'Cimilada hadda',
+  'Town':'Magaalada',
+  'Air quality':'Tayada hawada',
+  'Next 12 hours':'12 saacadood ee soo socda',
+  'Hourly':'Saacadle',
+  '10 days':'10 maalmood',
+  "What's the weather where you are?":'Waa maxay cimilada meesha aad joogto?',
+  'Your report is counted anonymously, with the town you chose, to help check the forecasts.':'Warbixintaada waxaa lagu tiriyaa si qarsoodi ah, magaalada aad dooratay, si ay gacan uga geysato hubinta saadaasha.',
+  'Pollen: there is no open pollen forecast for Somalia. The only free one covers Europe.':'Manka: ma jirto saadaal manka furan ee Soomaaliya. Midka kaliya ee xorta ah wuxuu daboolaa Yurub.',
+  'Clear sky':'Cirka cad',
+  'Mainly clear':'Inta badan cad',
+  'Partly cloudy':'Qayb daruuro leh',
+  'Overcast':'Baahsan',
+  'Fog or haze':'Ceeryaan ama ceeryaamo',
+  'Drizzle':'Daadi',
+  'Light rain':'Roob yar',
+  'Light showers':'Qubays fudud',
+  'Showers':'Qubeyska',
+  'Thunderstorm':'Onkod',
+  'Sunny':'Sunny',
+  'Cloudy':'Darruur leh',
+  'Raining':'Roobka',
+  'Heavy rain or storm':'Roobab culus ama duufaan',
+  'Dusty':'Boodh leh',
+  'Windy':'Dabayl badan',
   'Green':'Cagaaran', 'Yellow':'Jaalle', 'Orange':'Orange', 'Red':'Casaan', 'No warning':'Digniin ma leh', 'Be aware':'La soco', 'Be prepared':'U diyaar garow', 'Take action':'Talaabo qaado',
 };
 const SO_RX = [
@@ -2274,7 +2347,7 @@ function applyLang(l, rerender){
   if (typeof DOW!=='undefined') DOW.splice(0, 7, ...(l==='so' ? DOW_SO : DOW_EN));
   document.querySelectorAll('.seg.lang button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.lang===l));
   document.getElementById('so-note').hidden = l!=='so';
-  if (rerender){ renderHeader(); renderOutlook(); renderRivers(); renderRiversFc(); renderMarine(); renderTowns(); renderHazards(); renderFilters(); update(); }
+  if (rerender){ renderHeader(); renderOutlook(); renderRivers(); renderRiversFc(); renderMarine(); renderTowns(); renderHazards(); renderFilters(); update(); renderNow(); }
   translateNode(document.body);
 }
 document.querySelectorAll('.seg.lang button').forEach(b=>b.addEventListener('click', ()=>{ if (b.dataset.lang!==LANG){ track('language', b.dataset.lang); applyLang(b.dataset.lang, true); } }));
@@ -2353,6 +2426,115 @@ function showOffline(){
 addEventListener('offline', showOffline); addEventListener('online', showOffline);
 if (SITE && 'serviceWorker' in navigator) addEventListener('load', ()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 
+// ---------- weather now (after Google Weather: current conditions, 12 h outlook, hourly, 10 days, air quality) ----------
+// 'Now' is the hourly forecast for the viewer's current hour in Somalia, so it stays right through the day.
+const NOWD = FC && FC.now ? Object.fromEntries(FC.now.map(t=>[t.name, t])) : null;
+const CLIM = FC && FC.clim ? FC.clim : null;
+const wmo = c => c==null ? ['Unknown','cloud'] : c===0 ? ['Clear sky','sun'] : c===1 ? ['Mainly clear','sun'] : c===2 ? ['Partly cloudy','part']
+  : c===3 ? ['Overcast','cloud'] : c<50 ? ['Fog or haze','fog'] : c<60 ? ['Drizzle','rain'] : c<=61 ? ['Light rain','rain'] : c<=63 ? ['Rain','rain']
+  : c<=67 ? ['Heavy rain','rain'] : c<80 ? ['Overcast','cloud'] : c===80 ? ['Light showers','showers'] : c<=82 ? ['Showers','showers'] : c>=95 ? ['Thunderstorm','storm'] : ['Showers','showers'];
+const CLOUD = 'M15 36h19a8 8 0 0 0 1-15.9A11 11 0 0 0 14.2 18 9 9 0 0 0 15 36z';
+function wxIcon(kind, night){
+  const sun = (cx,cy,r) => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#ffc93c"/>` + [0,45,90,135,180,225,270,315].map(a=>{ const x=Math.cos(a*Math.PI/180), y=Math.sin(a*Math.PI/180); return `<line x1="${cx+x*(r+3)}" y1="${cy+y*(r+3)}" x2="${cx+x*(r+6.5)}" y2="${cy+y*(r+6.5)}" stroke="#ffb000" stroke-width="2.2" stroke-linecap="round"/>`; }).join('');
+  const moon = (cx,cy) => `<path d="M${cx+4},${cy-9}a10 10 0 1 0 6,17 8 8 0 1 1-6-17z" fill="#c6d3e3"/>`;
+  const cloud = (dx=0,dy=0,f='var(--muted)') => `<path d="${CLOUD}" transform="translate(${dx},${dy})" fill="${f}"/>`;
+  const drops = n => Array.from({length:n}, (_,i)=>`<line x1="${17+i*7}" y1="39" x2="${14+i*7}" y2="45" stroke="var(--rain)" stroke-width="2.4" stroke-linecap="round"/>`).join('');
+  const body = {
+    sun: night ? moon(24,24) : sun(24,24,8),
+    part: (night ? moon(17,17) : sun(17,16,6.5)) + cloud(4,4),
+    cloud: cloud(0,0),
+    fog: [18,25,32].map((y,i)=>`<line x1="${8+i*2}" y1="${y}" x2="${40-i*2}" y2="${y}" stroke="var(--muted)" stroke-width="3" stroke-linecap="round"/>`).join(''),
+    rain: cloud(0,-4) + drops(3),
+    showers: (night ? '' : sun(14,12,5.5)) + cloud(3,-3) + drops(2),
+    storm: cloud(0,-4) + '<path d="M25 30l-6 9h5l-3 8 9-11h-5l3-6z" fill="#fab219"/>',
+  }[kind] || cloud();
+  return `<svg class="wx" viewBox="0 0 48 48" aria-hidden="true">${body}</svg>`;
+}
+const AQI = [[50,'Good','#00e400','#0b2b0b','Air quality is fine for everyone.'], [100,'Moderate','#ffff00','#3a3a00','Unusually sensitive people should limit long outdoor exertion.'],
+  [150,'Unhealthy for sensitive groups','#ff7e00','#2a1400','Children, older people and anyone with heart or lung disease should limit long outdoor exertion.'],
+  [200,'Unhealthy','#ff0000','#ffffff','Everyone should limit long outdoor exertion; sensitive groups should avoid it.'],
+  [300,'Very unhealthy','#8f3f97','#ffffff','Everyone should avoid long outdoor exertion.'], [1e9,'Hazardous','#7e0023','#ffffff','Everyone should stay indoors and keep activity low.']];
+const UVC = [[3,'low'],[6,'moderate'],[8,'high'],[11,'very high'],[1e9,'extreme']];
+const localHour = () => new Date(Date.now()+3*HR).toISOString().slice(0,13)+':00';
+const dayIdx = iso => { const d = new Date(iso+'T00:00:00Z'); return Math.round((d - Date.UTC(d.getUTCFullYear(),0,1))/864e5) % 365; };
+function climNote(t){
+  if (!CLIM || !CLIM.towns[t.name]) return '';
+  const rows = CLIM.towns[t.name], b = t.bias ? t.bias.c : 0, out = [];
+  const days = t.d.time.slice(0,7).map((d,i)=>{ const r = rows[((dayIdx(d) - CLIM.start_doy) % 365 + 365) % 365]; return r && t.d.tx[i]!=null ? {d, tx:t.d.tx[i], norm:r[0]+b, p90:r[1]+b, rec:r[2]+b} : null; }).filter(Boolean);
+  const label = d => { const dd = new Date(d+'T00:00:00Z'); return `${DOW[dd.getUTCDay()]} ${dd.getUTCDate()}`; };
+  const rec = days.filter(o=>o.tx >= o.rec - 0.3), warm = days.filter(o=>o.tx - o.norm >= 3), cool = days.filter(o=>o.norm - o.tx >= 3);
+  if (rec.length) out.push(say(`<b>Near-record heat:</b> ${rec.map(o=>`${label(o.d)} ${fmt(o.tx)}°`).join(', ')}, at or above the hottest for this time of year since 1991 (about ${fmt(rec[0].rec)}°).`, `<b> Kulayl-ku-dhowaad:</b> ${rec.map(o=>`${label(o.d)} ${fmt(o.tx)}°`).join(', ')}, oo ah ama ka sarreeya kan ugu kulul xilligan sannadka tan iyo 1991 (qiyaastii ${fmt(rec[0].rec)}°).`));
+  else if (warm.length) out.push(say(`<b>Unusually warm:</b> ${warm.map(o=>label(o.d)).join(', ')}, up to ${fmt(Math.max(...warm.map(o=>o.tx-o.norm)),1)} °C above normal for the time of year.`, `<b> Si aan caadi ahayn u diirran:</b> ${warm.map(o=>label(o.d)).join(', ')}, ilaa ${fmt(Math.max(...warm.map(o=>o.tx-o.norm)),1)} °C ka sarreeya inta caadiga ah wakhtiga sanadka.`));
+  if (cool.length) out.push(say(`<b>Unusually cool:</b> ${cool.map(o=>label(o.d)).join(', ')}, up to ${fmt(Math.max(...cool.map(o=>o.norm-o.tx)),1)} °C below normal, usually from cloud and rain.`, `<b> Si aan caadi ahayn u qabooji:</b> ${cool.map(o=>label(o.d)).join(', ')}, ilaa ${fmt(Math.max(...cool.map(o=>o.norm-o.tx)),1)} °C ka hooseeya caadiga, badanaa ka yimaada daruur iyo roob.`));
+  if (!out.length) out.push(say(`Highest temperatures this week are near normal for the time of year (within 3 °C of the 1991–2025 average of about ${fmt(days[0] ? days[0].norm : 0)}°).`, `Heerkulka ugu sarreeya toddobaadkan wuxuu ku dhow yahay caadi wakhtiga sanadka (gudahood 3 °C) ee celceliska 1991-2025 ee qiyaastii ${fmt(days[0] ? days[0].norm : 0)} °).`));
+  return out.join('<br>');
+}
+function renderNow(){
+  const sec = document.getElementById('now');
+  if (!NOWD){ sec.hidden = true; return; }
+  const sel = document.getElementById('now-town');
+  if (!sel.options.length){
+    sel.innerHTML = FC.towns.map(t=>`<option value="${esc(t.name)}">${esc(t.name)}</option>`).join('');
+    sel.addEventListener('change', ()=>{ state.town = sel.value; renderNow(); renderTowns(); });
+  }
+  const t = NOWD[state.town] || NOWD.Mogadishu || Object.values(NOWD)[0];
+  sel.value = t.name;
+  const i = t.time.indexOf(localHour()), H = t.h;
+  if (i < 0){ document.getElementById('now-desc').textContent = say('This forecast is out of date; reload the page.', 'Saadaashani waa dhacday; dib u soo rog bogga'); return; }
+  const [desc, kind] = wmo(H.code[i]), night = H.day[i]===0;
+  document.getElementById('now-icon').innerHTML = wxIcon(kind, night);
+  document.getElementById('now-t').innerHTML = `${fmt(H.t[i])}<small>°C</small>`;
+  document.getElementById('now-desc').textContent = desc;
+  document.getElementById('now-hl').textContent = say(`High ${fmt(t.d.tx[0])}° · Low ${fmt(t.d.tn[0])}° · feels like ${fmt(H.at[i])}°`, `Sare ${fmt(t.d.tx[0])}° · Hooseeyo ${fmt(t.d.tn[0])}° · waxa uu dareemayaa sida ${fmt(H.at[i])}°`);
+  const uv = H.uv[i], uvc = UVC.find(c=>Math.round(uv??0) < c[0])[1];   // WHO bands use whole numbers
+  const items = [
+    [say('Humidity','Qoyaanka'), `${fmt(H.rh[i])}%`], [say('Wind','Dabaysha'), `${spd(H.ws[i])} ${say('from','ka')} ${COMPASS[Math.round((H.wd[i]||0)/22.5)%16]}`],
+    [say('Gusts','Gusts'), spd(H.wg[i])], [say('Cloud cover','Daboolka daruuraha'), `${fmt(H.cc[i])}%`],
+    [say('UV index','Tusmada UV'), `${fmt(uv,0)} ${say(uvc, uvc)}`], [say('Sunrise · sunset','Qorrax soo bax · gabbaldhac'), `${t.d.rise[0]} · ${t.d.set[0]}`],
+  ];
+  document.getElementById('now-grid').innerHTML = items.map(([k,v])=>`<span>${k} <b>${v}</b></span>`).join('');
+  document.getElementById('now-clim').innerHTML = climNote(t) + (uv>=6 && !night ? '<br>' + say('UV is high: at midday wear a hat, cover up and keep to the shade.', 'UV waa sarraysa: duhurkii xidho koofiyad, dabool oo hadhka ilaali.') : '');
+  // air quality
+  const aqEl = document.getElementById('now-aq');
+  if (t.aq){
+    const j = t.aq.time.indexOf(localHour()), a = t.aq.aqi[j];
+    if (a!=null){ const c = AQI.find(x=>a<=x[0]);
+      aqEl.innerHTML = `<span class="chipx" style="background:${c[2]};color:${c[3]}">${say('US AQI','US AQI')} ${fmt(a)} · ${say(c[1], c[1])}</span> ${say(c[4], c[4])}<br>PM2.5 <b>${fmt(t.aq.pm25[j],1)}</b> · PM10 <b>${fmt(t.aq.pm10[j],0)}</b> · ${say('dust','siigada')} <b>${fmt(t.aq.dust[j])}</b> · ${say('ozone','ozone')} <b>${fmt(t.aq.o3[j])}</b> µg/m³`;
+    } else aqEl.textContent = '–';
+  }
+  // next 12 hours
+  const n = Math.min(12, t.time.length - i), pp = H.pp.slice(i, i+n), pr = H.p.slice(i, i+n), hrs = t.time.slice(i, i+n);
+  const first = pp.findIndex((v,k)=>(v??0)>=50 || (pr[k]??0)>=0.5), mx = Math.max(0, ...pp.map(v=>v??0));
+  document.getElementById('now-cast').innerHTML = first>=0
+    ? say(`<b>Rain likely from ${hrs[first].slice(11,16)}</b> (${fmt(pp[first])}% chance, ${fmt(pr.slice(first).reduce((a,b)=>a+(b||0),0),1)} mm in the following hours).`, `<b> Roobka laga yaabo inuu ka yimaado ${hrs[first].slice(11,16)}</b> (${fmt(pp[first])}% fursad, ${fmt(pr.slice(first).reduce((a,b)=>a+(b||0),0),1)} mm saacadaha soo socda).`)
+    : mx < 20 ? say('<b>No rain expected</b> in the next 12 hours.', '<b> Wax roob ah lama filayo</b> 12ka saacadood ee soo socda.')
+    : say(`Small chance of rain, up to ${fmt(mx)}%.`, `Fursad yar oo roob ah, ilaa ${fmt(mx)}.`);
+  const W=560, Hh=118, L=30, R_=6, T_=12, B=22, pw=W-L-R_, ph=Hh-T_-B, bw=pw/n, Y = v => T_+ph-v/100*ph;
+  let svg = `<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Chance of rain, next 12 hours">`;
+  [0,50,100].forEach(v=>{ svg += `<line x1="${L}" x2="${L+pw}" y1="${Y(v)}" y2="${Y(v)}" stroke="${v?'var(--grid)':'var(--axis)'}"/><text x="${L-4}" y="${Y(v)+4}" text-anchor="end">${v}%</text>`; });
+  pp.forEach((v,k)=>{ const h = Math.max(1, (v||0)/100*ph); svg += `<rect x="${L+k*bw+3}" y="${T_+ph-h}" width="${bw-6}" height="${h}" rx="2" fill="var(--rain)" opacity="${(v||0)>=50?1:.55}"/>`;
+    if ((pr[k]||0)>=0.1) svg += `<text x="${L+k*bw+bw/2}" y="${T_+ph-h-3}" text-anchor="middle" style="font-size:10px;fill:var(--ink2)">${fmt(pr[k],1)}</text>`;
+    svg += `<text x="${L+k*bw+bw/2}" y="${Hh-6}" text-anchor="middle" style="font-size:10.5px">${hrs[k].slice(11,13)}</text>`; });
+  document.getElementById('now-cast-chart').innerHTML = svg + '</svg>';
+  // hourly strip, 24 h
+  document.getElementById('now-hourly').innerHTML = t.time.slice(i, i+24).map((tm,k)=>{ const q = i+k, [, kd] = wmo(H.code[q]);
+    return `<div class="c"><span>${k===0 ? say('Now','Hadda') : tm.slice(11,16)}</span>${wxIcon(kd, H.day[q]===0)}<b>${fmt(H.t[q])}°</b><span class="pp">${fmt(H.pp[q])}%</span></div>`; }).join('');
+  // 10 days
+  document.getElementById('now-daily').innerHTML = t.d.time.map((d,k)=>{ const dd = new Date(d+'T00:00:00Z'), [, kd] = wmo(t.d.code[k]);
+    return `<div class="c"><span>${k===0 ? say('Today','Maanta') : DOW[dd.getUTCDay()] + ' ' + dd.getUTCDate()}</span>${wxIcon(kd)}<b>${fmt(t.d.tx[k])}°</b><span>${fmt(t.d.tn[k])}°</span><span class="pp">${fmt(t.d.pp[k])}%</span></div>`; }).join('');
+  // weather reports, sent as analytics events
+  const rep = document.getElementById('now-report');
+  rep.parentElement.hidden = !ANALYTICS;
+  if (!rep.children.length) rep.innerHTML = [['sunny','Sunny'],['cloudy','Cloudy'],['raining','Raining'],['storm','Heavy rain or storm'],['dusty','Dusty'],['windy','Windy']]
+    .map(([k,l])=>`<button type="button" class="btn" data-rep="${k}">${l}</button>`).join('');
+  rep.querySelectorAll('button[data-rep]').forEach(b=>{ b.onclick = () => { trackNow('weather-report', `${state.town}-${b.dataset.rep}`);
+    document.getElementById('now-report-note').textContent = say(`Thank you. Your report for ${state.town} was sent.`, `Mahadsanid Warbixintaada ${state.town} waa la soo diray.`); }; });
+  document.getElementById('now-src').innerHTML = say(`Forecast models via Open-Meteo. Air quality from CAMS (Copernicus). ` + `Normals and records from NASA POWER 1991–2025, adjusted for this town's model bias over the past ${t.bias ? t.bias.n : 30} days. ` + `Somalia has no weather radar, so the next 12 hours come from forecast models; Google's nowcast also uses radar where it exists.`, `Qaababka saadaasha iyada oo loo marayo Open-Meteo. Tayada hawada CAMS (Copernicus). ` + `Caadiyada iyo diiwaanada NASA POWER 1991–2025, lagu hagaajiyay eexda moodada magaaladan maalmihii la soo dhaafay ${t.bias ? t.bias.n : 30} ` + `Soomaaliya malahan radar cimilo, sidaas darteed 12-ka saac ee soo socda waxay ka imaanayaan moodooyinka saadaasha; Google's nowcast sidoo kale waxay isticmaashaa radar halka ay ka jirto.`);
+}
+// a report must always count, so it bypasses the 30-second de-duplication
+function trackNow(name, value){ if (!ANALYTICS) return; trackQ.push([name, String(value).slice(0,60).replace(/[^\w.\-]+/g,'-')]); trackFlush(); }
+setInterval(()=>{ if (!document.hidden) renderNow(); }, 10*60*1000);   // keep 'now' current if the page stays open
+
 // ---------- usage analytics ----------
 // Counts which features people use, through GoatCounter or Umami when the build configures
 // one (see build.py). No cookies, no personal data, nothing sent when neither is set up.
@@ -2378,7 +2560,7 @@ function track(name, value){
   trackQ.push([name, value==null ? null : String(value).slice(0,60).replace(/[^\w.\-]+/g,'-')]);
   trackFlush();
 }
-const TRACK_CHANGE = {'o-fireP':'fire-period', 'o-field':'map-field', 'o-model':'model', 'o-unit':'wind-unit', 'f-layer':'map-layer', 'f-season':'season', 'f-station':'station', 'raw-ds':'raw-dataset'};
+const TRACK_CHANGE = {'now-town':'now-town', 'o-fireP':'fire-period', 'o-field':'map-field', 'o-model':'model', 'o-unit':'wind-unit', 'f-layer':'map-layer', 'f-season':'season', 'f-station':'station', 'raw-ds':'raw-dataset'};
 const TRACK_CLICK = {'share-btn':'share-link', 'cap-btn':'cap-alerts', 'cap-copy':'cap-copy', 'raw-copy':'raw-csv', 'probe-csv':'point-csv', 'tl-play':'timeline-play', 'tl-now':'timeline-now', 'probe-close':'point-close', 'contact-copy':'contact-copy', 'contact-send':'contact-email'};
 document.addEventListener('change', e=>{
   const id = e.target.id || '';
@@ -2402,7 +2584,7 @@ document.addEventListener('click', e=>{
 if (location.hash.length>1) track('shared-link-opened');
 
 applyLang(LANG, false);
-renderHeader(); renderOutlook(); renderFilters(); renderRivers(); renderRiversFc(); renderMarine(); renderTowns(); renderHazards(); renderCatalog(); renderMethod(); update(); applyView();
+renderHeader(); renderOutlook(); renderFilters(); renderRivers(); renderRiversFc(); renderMarine(); renderTowns(); renderHazards(); renderCatalog(); renderMethod(); update(); applyView(); renderNow();
 if (WX && state.ov.cloud) preloadClouds();
 translateNode(document.body); updateShareLinks(); showOffline();
 const rethemed = () => { renderMap(); renderWx(); };

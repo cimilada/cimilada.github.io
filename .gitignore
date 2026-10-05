@@ -28,3 +28,4 @@ __pycache__/
 data/wx/fires.json
 data/wx/gibs.json
 data/wx/ndvi.json
+data/fc/now.json

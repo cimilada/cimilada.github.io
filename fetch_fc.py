@@ -9,6 +9,8 @@ Hazards Watch, and the town/port outlooks of Windy and meteoblue. All keyless:
   rivers  GloFAS v4 river discharge ensemble, 30 days, at the six FRRIMS gauges,
           with the Oct 2023 - Jan 2024 flood (the worst since 1997) as reference
   marine  wave height, swell and period at eight ports, 7 days
+  now     town weather card: current, 48 h hourly, 10 days, air quality (US AQI)
+  clim    1991-2025 daily temperature climatology per town from NASA POWER (static, cached)
 
 Each stage is cached in data/fc/<stage>.json; name stages on the command line to refresh.
 """
@@ -185,11 +187,95 @@ def marine():
     return out
 
 
+def now():
+    """Town weather card (after Google Weather): current conditions, 48 h hourly, 10 days, air quality.
+    The page picks the value for the viewer's current hour, so 'now' stays right through the day."""
+    hv = "temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,precipitation_probability,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloud_cover,uv_index,is_day"
+    dv = "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,sunrise,sunset,uv_index_max,wind_speed_10m_max"
+    fc = multi("https://api.open-meteo.com/v1/forecast", TOWNS,
+               {"hourly": hv, "daily": dv, "forecast_days": 10, "past_days": 31, "timezone": "Africa/Mogadishu", "wind_speed_unit": "ms"})
+    aq = multi("https://air-quality-api.open-meteo.com/v1/air-quality", TOWNS,
+               {"hourly": "us_aqi,pm2_5,pm10,dust,ozone", "forecast_days": 3, "past_days": 1, "timezone": "Africa/Mogadishu"})
+    if fc is None:
+        return None
+    out = []
+    for t, f, a in zip(TOWNS, fc, aq or [None] * len(TOWNS)):
+        h, d = f["hourly"], f["daily"]
+        # bias of the model against NASA POWER over the last month, so forecast highs can be compared
+        # with POWER's 1991-2025 normals without false 'unusual' flags from grid differences
+        today = dt.date.today().isoformat()
+        past = {day: v for day, v in zip(d["time"], d["temperature_2m_max"]) if day < today and v is not None}
+        bias = None
+        pw = get("https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX&community=AG"
+                 f"&latitude={t[1]}&longitude={t[2]}&start={min(past).replace('-', '')}&end={max(past).replace('-', '')}&format=JSON",
+                 timeout=120) if past else None
+        if pw:
+            ref = json.loads(pw)["properties"]["parameter"]["T2M_MAX"]
+            diffs = [past[k] - ref[k.replace("-", "")] for k in past if ref.get(k.replace("-", ""), -999) > -900]
+            bias = {"c": r1(float(np.mean(diffs))), "n": len(diffs)} if len(diffs) >= 10 else None
+        i_today = d["time"].index(today) if today in d["time"] else 0
+        d = {k: v[i_today:] for k, v in d.items()}
+        keep = lambda arr, nd=1: [None if v is None else round(v, nd) for v in arr]
+        # keep from 6 h before now to 66 h ahead: enough for 'now', the 12 h nowcast and a 48 h strip
+        t0 = dt.datetime.now(dt.timezone(dt.timedelta(hours=3))).strftime("%Y-%m-%dT%H:00")
+        i0 = max(0, next((i for i, x in enumerate(h["time"]) if x >= t0), 0) - 6)
+        h = {k: v[i0:i0 + 72] for k, v in h.items()}
+        o = {"name": t[0], "time": h["time"],
+             "h": {k: keep(h[v], 1 if v not in ("relative_humidity_2m", "precipitation_probability", "weather_code", "wind_direction_10m", "cloud_cover", "is_day") else 0)
+                   for k, v in (("t", "temperature_2m"), ("at", "apparent_temperature"), ("rh", "relative_humidity_2m"),
+                                ("p", "precipitation"), ("pp", "precipitation_probability"), ("code", "weather_code"),
+                                ("ws", "wind_speed_10m"), ("wd", "wind_direction_10m"), ("wg", "wind_gusts_10m"),
+                                ("cc", "cloud_cover"), ("uv", "uv_index"), ("day", "is_day"))},
+             "d": {"time": d["time"], "code": d["weather_code"], "tx": keep(d["temperature_2m_max"]), "tn": keep(d["temperature_2m_min"]),
+                   "p": keep(d["precipitation_sum"]), "pp": d["precipitation_probability_max"], "rise": [x[11:16] for x in d["sunrise"]],
+                   "set": [x[11:16] for x in d["sunset"]], "uv": keep(d["uv_index_max"]), "ws": keep(d["wind_speed_10m_max"])},
+             "bias": bias}
+        if a:
+            ah = a["hourly"]
+            o["aq"] = {"time": ah["time"], "aqi": ah["us_aqi"], "pm25": keep(ah["pm2_5"]), "pm10": keep(ah["pm10"]),
+                       "dust": keep(ah["dust"], 0), "o3": keep(ah["ozone"], 0)}
+        out.append(o)
+    print("now", len(out), "towns,", len(out[0]["time"]), "hours,", "air quality" if aq else "no air quality")
+    return out
+
+
+def clim():
+    """Daily temperature climatology 1991-2025 for each town from NASA POWER (MERRA-2), for the
+    record and unusual-temperature notes. Kept for every day of the year within a 15-day window:
+    mean, 90th percentile, record of the daily maximum; mean and record low of the daily minimum."""
+    import datetime as _dt
+    out = {}
+    for t in TOWNS:
+        r = get("https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,T2M_MIN&community=AG"
+                f"&latitude={t[1]}&longitude={t[2]}&start=19910101&end=20251231&format=JSON", timeout=180)
+        if not r:
+            return None
+        par = json.loads(r)["properties"]["parameter"]
+        tx, tn = {}, {}
+        for k, v in par["T2M_MAX"].items():
+            if v > -900:
+                tx.setdefault(k[4:], []).append(v)
+        for k, v in par["T2M_MIN"].items():
+            if v > -900:
+                tn.setdefault(k[4:], []).append(v)
+        days = [(_dt.date(2001, 1, 1) + _dt.timedelta(i)).strftime("%m%d") for i in range(365)]
+        rows = []
+        for i, md in enumerate(days):
+            win = [days[(i + k) % 365] for k in range(-7, 8)]
+            X = np.array([v for w in win for v in tx.get(w, [])])
+            N = np.array([v for w in win for v in tn.get(w, [])])
+            rows.append([r1(X.mean()), r1(np.percentile(X, 90)), r1(X.max()), r1(N.mean()), r1(N.min())])
+        out[t[0]] = rows
+        time.sleep(0.5)
+    print("clim", len(out), "towns, 365 days (mean max, p90 max, record max, mean min, record min)")
+    return {"years": "1991-2025", "source": "NASA POWER (MERRA-2)", "towns": out}
+
+
 def main():
     os.makedirs(D, exist_ok=True)
-    refresh = set(sys.argv[1:]) or {"towns", "rivers", "marine"}
+    refresh = set(sys.argv[1:]) or {"towns", "rivers", "marine", "now"}   # clim is static: fetched once, then cached
     out = {"built": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M")}
-    for name, fn in [("towns", towns), ("rivers", rivers), ("marine", marine)]:
+    for name, fn in [("towns", towns), ("rivers", rivers), ("marine", marine), ("now", now), ("clim", clim)]:
         p = f"{D}{name}.json"
         if name in refresh or not os.path.exists(p):
             v = fn()
@@ -197,6 +283,12 @@ def main():
                 sys.exit(f"{name}: fetch failed, nothing written")
             json.dump(v, open(p, "w"), separators=(",", ":"))
         out[name] = json.load(open(p))
+        if name == "clim":                  # the page needs only the next two weeks of the year
+            import datetime as _dt
+            doy = lambda d: (d.timetuple().tm_yday - 1) % 365
+            first = doy(_dt.date.today() - _dt.timedelta(days=1))
+            out[name] = {**out[name], "start_doy": first,
+                         "towns": {k: [v[(first + i) % 365] for i in range(16)] for k, v in out[name]["towns"].items()}}
         print(name, "ok", flush=True)
     json.dump(out, open("fc.json", "w"), separators=(",", ":"))
     print("fc.json", f"{os.path.getsize('fc.json') / 1e3:.0f} kB")
